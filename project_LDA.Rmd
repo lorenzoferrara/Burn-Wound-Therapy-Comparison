@@ -1,0 +1,19 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+burn <- read.table("~/GitHub/Lifetime_Data_Analysis_project/Burn.txt", quote="\"", comment.char="")
+  
+colnames(burn) = c("Treatment", "Gender", "Total percentage of burns", "Head indicator", "Buttocks indicator", "Torso indicator", "Upper leg indicator", "Lower leg indicator", "Respiratory system indicator", "Type of burn", "Time to staphylococcus infection", "Infection indicator")
+
+burn$Gender = factor( burn$Gender, levels = c(0,1), labels=c("Man", "Woman"))
+burn$Treatment = factor( burn$Treatment, levels = c(0,1), labels=c("bathing care", "body cleansing"))
+burn$`Type of burn` = factor( burn$`Type of burn`, levels = c(1, 2, 3, 4), labels=c("chemical", "scalding", "electrical", "flame"))
+head(burn)
+
+# https://en.wikipedia.org/wiki/Detoxification_(alternative_medicine))
+
+```
+

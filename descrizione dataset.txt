@@ -1,0 +1,30 @@
+Study on patients with burns
+============================
+
+Contents: Data of 154 patients from a study on the efficacy of two
+          different burn treatments on different parts of the body.
+
+Objective: To compare both burn treatments ("bathing care"  and
+           "body cleansing") with respect to the time until a
+           staphylococcus infection.
+
+Note: You do not have to study all of the variables of the data set.
+      Choose five to eight variables based on your statistical
+      or medical criteria.
+
+Variables:
+* Treatment (0: Standard ("bathing care"),
+             1: Alternative ("body cleansing";
+                https://en.wikipedia.org/wiki/Detoxification_(alternative_medicine))
+* Gender (0: Man, 1: Woman)
+* Total percentage of burns
+* Head indicator (1: yes; 0: no)
+* Buttocks indicator (1: yes; 0: no)
+* Torso indicator (1: yes; 0: no)
+* Upper leg indicator (1: yes; 0: no)
+* Lower leg indicator (1: yes; 0: no)
+* Respiratory system indicator (1: yes; 0: no)
+* Type of burn (1 = chemical, 2 = scalding, 3 = electrical,
+                4 = flame)
+* Time to staphylococcus infection [days]
+* Infection indicator (1: yes; 0: no)
