@@ -1,19 +1,304 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
+  html_notebook: default
+  pdf_document: default
 ---
 
-```{r}
-burn <- read.table("~/GitHub/Lifetime_Data_Analysis_project/Burn.txt", quote="\"", comment.char="")
-  
-colnames(burn) = c("Treatment", "Gender", "Total percentage of burns", "Head indicator", "Buttocks indicator", "Torso indicator", "Upper leg indicator", "Lower leg indicator", "Respiratory system indicator", "Type of burn", "Time to staphylococcus infection", "Infection indicator")
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	fig.align = "center",
+	warning = FALSE,
+	cache = TRUE,
+	# echo = FALSE,
+	out.width = "70%",
+	tidy = TRUE,
+	tidy.opts = list(width.cutoff = 50)
+)
+knitr::opts_chunk$set(out.width = '70%')
+knitr::opts_chunk$set(fig.align = "center")
+knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50), tidy=TRUE)
+library(knitr)
+# library(kableExtra)
 
-burn$Gender = factor( burn$Gender, levels = c(0,1), labels=c("Man", "Woman"))
-burn$Treatment = factor( burn$Treatment, levels = c(0,1), labels=c("bathing care", "body cleansing"))
-burn$`Type of burn` = factor( burn$`Type of burn`, levels = c(1, 2, 3, 4), labels=c("chemical", "scalding", "electrical", "flame"))
+library(survival)
+```
+
+```{r}
+burn <- read.table("Burn.txt", quote="\"", comment.char="")
+  
+colnames(burn) = c("treatment", "gender", "burn.percentage", "head", "buttock", "torso", "upper.leg", "lower.leg", "respiratory.system", "burn.type", "time", "cens")
+
+burn$gender = factor( burn$gender, levels = c(0,1), labels=c("Man", "Woman"))
+burn$treatment = factor( burn$treatment, levels = c(0,1), labels=c("bathing care", "body cleansing"))
+burn$burn.type = factor( burn$burn.type, levels = c(1, 2, 3, 4), labels=c("chemical", "scalding", "electrical", "flame"))
+
+for(i in c(4:9))
+  burn[,i] = as.factor(burn[,i])
+
 head(burn)
 
 # https://en.wikipedia.org/wiki/Detoxification_(alternative_medicine))
 
 ```
+
+## Introduction
+
+### Description of the problem
+It is generally known that infection is the chief reason for death and morbidity after burn injury, with it being responsible for 51% of the deaths, especially in the first 24h.
+
+Burn wounds lack epidermis and circulation, so they are the best culture media with a centigrade temperature of 37 degrees. Therefore, they are the best media for bacterial growth. A few hours after the burn (normally 4-5 hours after) the wound surface becomes contaminated with many bacterial flora, which will start to grow and multiply, reaching the vascular and lymphatic vessels and starting to disperse. At this point, bacteraemia and sepsis start.
+
+Usually the most frequent bacteria found in burn wound culture are Staphylococcus (55%), Pseudomonas aeruginosa (14.29%), Enterococcus (12.24%), E. coli (4%), Klebsiella and Proteus (both 2%).
+
+Burn severity and the extent of burn injury are major risk factors for the development of infection in burn patients. Indeed burns that involve a larger surface area of the body, and burns that are deeper or more severe, are more likely to become infected.
+
+Additionally, burns caused by certain types of insults, such as chemical or electrical burns, may be at a higher risk of infection than burns caused by other types of insults, such as thermal burns.
+
+### Goals 
+
+Our goal is to compare both burn treatments ("bathing care"  and "body cleansing") with respect to the time until a Staphylococcus infection.
+
+For that reason, we will focus on long time effect of an infection which has not been adequately treated or has not been treated on time.
+
+## 2) Descriptive analysis
+
+```{r}
+par(mfrow=c(2,2))
+for (i in c(1:2,4:10))
+boxplot(burn$time ~ burn[,i], main=names(burn)[i])
+
+i=3
+plot(burn$time, burn[,i], ylab=names(burn)[i], xlab='Time to staphylococcus infection (days)', ylim=c(0,100))
+```
+
+distribuzione dei livelli:
+```{r}
+library(ggplot2)
+library(dplyr)
+# library(ggpubr)
+
+df <- burn %>%
+  group_by(burn.type) %>%
+  summarise(counts = n())
+
+ggplot(df, aes(x = burn.type, y = counts)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3) 
+```
+
+```{r}
+df <- burn %>%
+  group_by(gender) %>%
+  summarise(counts = n())
+
+ggplot(df, aes(x = gender, y = counts)) +
+  geom_bar(fill = c("#0073C2FF", "sienna1"), stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3)
+```
+
+```{r}
+binwidth = 4.5
+p<-ggplot(burn, aes(x=burn.percentage)) + 
+  geom_histogram(color="black", fill= heat.colors(round(100/binwidth), rev = T), binwidth = binwidth)
+
+# +scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))
+p
+
+```
+
+```{r}
+df = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) )
+
+ggplot(df, aes(x = area, y = counts)) +
+  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_text(aes(label = counts), vjust = -0.3) 
+```
+
+## 3) Nonparametric analysis
+
+### Estimation of the survival function
+
+```{r}
+
+for(indice in c(2, 4:10)){
+# {indice = 4
+
+covariata = burn[,indice]
+n=length(levels(covariata))
+svf <- survfit(Surv(time, cens) ~ covariata + treatment, burn)
+# print(svf)
+# print(summary(svf))
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste(names(burn)[indice], "=", levels(covariata)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par(las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+plot(svf, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = T)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+title( paste("Survival functions divided according to", names(burn)[indice] ))
+
+}
+
+```
+
+### Estimation of the median survival time.
+
+```{r}
+for(indice in c(1:2, 4:10)){
+  
+covariata = burn[,indice]
+n=length(levels(covariata))
+svf <- survfit(Surv(time, cens) ~ covariata, burn, )
+print(svf)
+}
+```
+
+DA MODIFICARE
+
+### Comparison of survival functions by means of nonparametric tests such as the logrank test.
+
+SCRIVERE CON LATEX QUALE TEST VOGLIAMO FARE
+
+We use an (extended) Gehan test, which puts more weight on the smallest observations, to verify if the
+two survival functions are similar at the beginning. 
+
+<!-- The p-value we get is p = 0.3, so at level α = 0.05 -->
+<!-- we accept the null hypothesis, meaning that we don’t have enough evidence to state that they have a -->
+<!-- different short-term effect. -->
+
+```{R}
+formula = with(burn, Surv(time, cens) ~ treatment + gender)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + head)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + buttock)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + torso)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + upper.leg)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + lower.leg)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + respiratory.system)
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
+survdiff(formula, rho=1)                        
+```
+
+## With these data, a stratified test might be a good idea, because of the unbalanced deisgn of the experiment and because our ultime goal is the one to verify the effect of each treatment to intervene in a specific medical situation (with specific burn locations and percentage of body burnt)
+
+```{R}
+formula = with(burn, Surv(time, cens) ~ treatment + strata(gender))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(head))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(buttock))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(torso))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(upper.leg))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(lower.leg))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(respiratory.system))
+survdiff(formula)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
+survdiff(formula)                        
+```
+
+```{R}
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(gender))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(head))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(buttock))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(torso))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(upper.leg))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(lower.leg))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + strata(respiratory.system))
+survdiff(formula, rho=1)                        
+
+formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
+survdiff(formula, rho=1)                        
+```
+
+```{r}
+formula = with(burn, Surv(time, cens) ~ treatment + strata(gender) + strata(head) + strata(buttock) + strata(torso) + strata(upper.leg) + strata(lower.leg) + strata(respiratory.system) + strata(burn.type))
+
+survdiff(formula, rho=1)
+```
+
+```{r}
+p=c()
+for(rho in seq(-4, 4, length=30)){
+  sdf = survdiff(formula, rho=rho)
+  p= c(p, 1 - pchisq(sdf$chisq, length(sdf$n) - 1))
+}
+plot(seq(-4, 4, length=30), p)
+abline(h=0.05, lty=2, col="red")
+seq(-4, 4, length=30)[which.min(p)]
+```
+
+```{r}
+survdiff(formula, rho=-1)
+```
+
+4. Fit of a parametric survival model
+
+• Fit of a Weibull, log-logistic, or lognormal model.
+
+• Interpretation of the model fit.
+
+• Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor.
+
+5. Fit of a semi-parametric model
+
+• Fit of the proportional hazards models.
+
+• Interpretation of the model fit.
+
+• Interpretation of the model parameters in terms of relative hazards.
+
+• Analysis of the residuals to check the model’s goodness-of-fit.
+
+6. Conclusions
+
+<!-- The report can be wrien in either Catalan, Spanish, or English and it should comprise approximately -->
+<!-- 10 to 12 pages with a maximum number of ve tables and ve gures. Half a point is given for a good -->
+<!-- presentation of the work. -->
 
