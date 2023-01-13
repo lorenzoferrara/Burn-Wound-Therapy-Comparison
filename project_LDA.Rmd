@@ -1,10 +1,10 @@
 ---
 title: "R Notebook"
 output:
+  pdf_document: default
+  html_notebook: default
   html_document:
     df_print: paged
-  html_notebook: default
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,7 +12,7 @@ knitr::opts_chunk$set(
 	fig.align = "center",
 	warning = FALSE,
 	cache = TRUE,
-	# echo = FALSE,
+	echo = FALSE,
 	out.width = "70%",
 	tidy = TRUE,
 	tidy.opts = list(width.cutoff = 50)
@@ -44,7 +44,7 @@ head(burn)
 
 ```
 
-## Introduction
+## 1) Introduction
 
 ### Description of the problem
 It is generally known that infection is the chief reason for death and morbidity after burn injury, with it being responsible for 51% of the deaths, especially in the first 24h.
@@ -78,6 +78,7 @@ distribuzione dei livelli:
 ```{r}
 library(ggplot2)
 library(dplyr)
+library(patchwork)
 # library(ggpubr)
 
 df <- burn %>%
@@ -85,7 +86,8 @@ df <- burn %>%
   summarise(counts = n())
 
 ggplot(df, aes(x = burn.type, y = counts)) +
-  geom_bar(fill = "#0073C2FF", stat = "identity") +
+  # geom_bar(fill = "#0073C2FF", stat = "identity") +
+  geom_bar(fill = c("green3", "#0073C2FF", "yellow2", "red2"), stat = "identity") +
   geom_text(aes(label = counts), vjust = -0.3) 
 ```
 
@@ -95,7 +97,7 @@ df <- burn %>%
   summarise(counts = n())
 
 ggplot(df, aes(x = gender, y = counts)) +
-  geom_bar(fill = c("#0073C2FF", "sienna1"), stat = "identity") +
+  geom_bar(fill = c("#0073C2FF", "salmon2"), stat = "identity") +
   geom_text(aes(label = counts), vjust = -0.3)
 ```
 
@@ -151,7 +153,7 @@ title( paste("Survival functions divided according to", names(burn)[indice] ))
 
 ```
 
-### Estimation of the median survival time.
+### Estimation of the median survival time
 
 ```{r}
 for(indice in c(1:2, 4:10)){
@@ -175,6 +177,13 @@ two survival functions are similar at the beginning.
 <!-- The p-value we get is p = 0.3, so at level α = 0.05 -->
 <!-- we accept the null hypothesis, meaning that we don’t have enough evidence to state that they have a -->
 <!-- different short-term effect. -->
+
+This function implements the $G_\rho$ family of Harrington and Fleming (1982), with weights on
+each death of $S(t)^\rho$, where $S(t)$ is the Kaplan-Meier estimate of survival. 
+With $\rho = 0$ this is the log-rank test, and with $\rho = 1$ it is equivalent to the Peto & Peto modification
+of the Gehan-Wilcoxon test.
+
+if we use $\rho<0$, for example $\rho=-1$, we'll give more weight to bigger survival times (?????), so we'll be able to test for long terms differences.  
 
 ```{R}
 formula = with(burn, Surv(time, cens) ~ treatment + gender)
@@ -202,7 +211,7 @@ formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
 survdiff(formula, rho=1)                        
 ```
 
-## With these data, a stratified test might be a good idea, because of the unbalanced deisgn of the experiment and because our ultime goal is the one to verify the effect of each treatment to intervene in a specific medical situation (with specific burn locations and percentage of body burnt)
+With these data, a stratified test might be a good idea, due to the unbalanced design of the experiment, but also because our ultimate goal is to verify the effect of each treatment in each specific medical situation (with specific burn locations and percentage of body burnt)
 
 ```{R}
 formula = with(burn, Surv(time, cens) ~ treatment + strata(gender))
@@ -278,25 +287,181 @@ seq(-4, 4, length=30)[which.min(p)]
 survdiff(formula, rho=-1)
 ```
 
-4. Fit of a parametric survival model
+## 4) Fit of a parametric survival model
 
-• Fit of a Weibull, log-logistic, or lognormal model.
+### Fit of a Weibull, log-logistic, or lognormal model.
 
-• Interpretation of the model fit.
+```{r}
+#Weibull
+surv = with(burn, Surv(time, cens))
 
-• Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor.
+weibfit = survreg(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(weibfit) 
+```
 
-5. Fit of a semi-parametric model
+```{r}
+weibfit = survreg(surv ~ treatment + gender + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(weibfit) 
+```
 
-• Fit of the proportional hazards models.
+```{r}
+weibfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(weibfit) 
+```
 
-• Interpretation of the model fit.
+```{r}
+weibfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + burn.type, data = burn)
+summary(weibfit) 
+```
 
-• Interpretation of the model parameters in terms of relative hazards.
+```{r}
+weibfit = survreg(surv ~ treatment + gender + buttock + lower.leg + burn.type, data = burn)
+summary(weibfit) 
+```
 
-• Analysis of the residuals to check the model’s goodness-of-fit.
+```{r}
+weibfit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn)
+summary(weibfit) 
+```
 
-6. Conclusions
+Residuals:
+```{r}
+weibpred <- predict(weibfit, type = "linear")
+resids <- (log(burn$time) - weibpred) / weibfit$scale
+
+par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0),
+    mar = c(5, 5, 4, 2))
+plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 3, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
+title("Residuals of the Weibull regression model")
+
+survgumb <- function(x) {     #theoretical survival function
+  return(exp(-exp(x)))
+}
+
+curve(survgumb(x), from = min(resids), to = max(resids), col = 2, lwd = 3,
+      add = TRUE)
+legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Gumbel Distribution"),
+       col = c(1, 1, 2), lty = c(1, 2, 1), lwd = 3, bty = "n")
+```
+
+
+Let's look a bit closer:
+
+```{r out.width = '80%'}
+par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0),
+    mar = c(5, 5, 4, 2))
+plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 3, ylab = expression(bold(hat(S)(t))) , yaxs = "i", xlim=c(-4, -2), ylim=c(0.9, 1))
+title("Residuals of the Weibull regression model")
+
+survgumb <- function(x) {
+  return(exp(-exp(x)))
+}
+
+curve(survgumb(x), from = min(resids), to = max(resids), col = 2, lwd = 3,
+      add = TRUE)
+legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Gumbel Distribution"),
+       col = c(1, 1, 2), lty = c(1, 2, 1), lwd = 3, bty = "n")
+```
+
+-------------------------------
+-------------------------------
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + head + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{r}
+logfit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn, dist = "loglogistic")
+summary(logfit) 
+```
+
+```{R}
+logpred <- predict(logfit, type = "linear")
+resids <- (log(burn$time) - logpred) / logfit$scale
+
+par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0), mar = c(4.8, 5, 2.5, 2))
+plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 2, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
+title("Residuals of the Log-logistic regression model")
+
+logistic <- function(x) {  #theoretical survival function
+  return(1/(1+exp(x)))
+}
+
+curve(logistic(x), from = min(resids), to = max(resids), col = 2, lwd = 2,
+      add = TRUE)
+legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Logistic Distribution"),
+       col = c(1, 1, 2), lty = c(1, 3, 1), lwd = 3, bty = "n")
+```
+
+### Interpretation of the model fit.
+
+
+
+### Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor.
+
+## 5) Fit of a semi-parametric model
+
+The fit of a Cox model
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(cox1)
+```
+
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(cox1)
+```
+
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
+summary(cox1)
+```
+
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + lower.leg + burn.type, data = burn)
+summary(cox1)
+```
+
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + burn.type, data = burn)
+summary(cox1)
+```
+
+```{R}
+cox1 <- coxph(surv ~ treatment + gender + buttock + burn.type, data = burn)
+summary(cox1)
+```
+
+### Fit of the proportional hazards models.
+
+### Interpretation of the model fit.
+
+### Interpretation of the model parameters in terms of relative hazards.
+
+### Analysis of the residuals to check the model’s goodness-of-fit.
+
+## 6) Conclusions
 
 <!-- The report can be wrien in either Catalan, Spanish, or English and it should comprise approximately -->
 <!-- 10 to 12 pages with a maximum number of ve tables and ve gures. Half a point is given for a good -->
