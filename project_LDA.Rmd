@@ -65,53 +65,78 @@ For that reason, we will focus on long time effect of an infection which has not
 
 ## 2) Descriptive analysis
 
-```{r}
-par(mfrow=c(2,2))
-for (i in c(1:2,4:10))
-boxplot(burn$time ~ burn[,i], main=names(burn)[i])
+We notice that 69% of the dataset consists of censored observations, which might lead to a lower accuracy and effectiveness of the result of our analyses.
 
-i=3
-plot(burn$time, burn[,i], ylab=names(burn)[i], xlab='Time to staphylococcus infection (days)', ylim=c(0,100))
+```{r}
+round(sum(burn$cens==0)/length(burn$cens)*100, 0)
 ```
 
-distribuzione dei livelli:
+```{r ggpairs_sise, out.width="90%", fig.align='center'}
+# library(ggplot2)
+# library(GGally)
+# 
+# my_dens <- function(data, mapping, ...) {
+#   ggplot(data = data, mapping=mapping) +
+#     geom_density(..., mapping = ggplot2::aes(color = treatment, alpha = 0.7), fill=NA) 
+# }
+# 
+# ggpairs(
+#   burn[,],
+#   mapping = ggplot2::aes(color = treatment, alpha = 0.8),
+#   diag = list(continuous = my_dens),
+#   upper = list(continuous = wrap("density", alpha = 0.5), combo = "box_no_facet"),
+#   lower = list(continuous = wrap("points", alpha = 0.3), combo = wrap("dot_no_facet", alpha = 0.4)),
+#   title = ""
+# )
+```
+
+
+First we observe how our data are distributed:
+
+DA METTER IN UN MFROW(2,2), MA GGPLOT FA LE BIZZE
 ```{r}
 library(ggplot2)
 library(dplyr)
 library(patchwork)
-# library(ggpubr)
 
+#BURN TYPE
 df <- burn %>%
   group_by(burn.type) %>%
   summarise(counts = n())
 
 ggplot(df, aes(x = burn.type, y = counts)) +
-  # geom_bar(fill = "#0073C2FF", stat = "identity") +
-  geom_bar(fill = c("green3", "#0073C2FF", "yellow2", "red2"), stat = "identity") +
+  geom_bar(fill = c("green3", "#0073C2FF", "yellow2", "red3"), stat = "identity") +
   geom_text(aes(label = counts), vjust = -0.3) 
-```
 
-```{r}
+
+#GENDER
 df <- burn %>%
   group_by(gender) %>%
   summarise(counts = n())
 
 ggplot(df, aes(x = gender, y = counts)) +
-  geom_bar(fill = c("#0073C2FF", "salmon2"), stat = "identity") +
+  geom_bar(fill = c("#0073C2FF", "salmon2"), stat = "identity") + 
   geom_text(aes(label = counts), vjust = -0.3)
-```
 
-```{r}
+
+#TREATMENT
+df <- burn %>%
+  group_by(treatment) %>%
+  summarise(counts = n())
+
+ggplot(df, aes(x = treatment, y = counts)) +
+  geom_bar(fill = c("royalblue", "orange2"), stat = "identity") + 
+  geom_text(aes(label = counts), vjust = -0.3)
+
+
+#BURN PERCENTAGE
 binwidth = 4.5
 p<-ggplot(burn, aes(x=burn.percentage)) + 
   geom_histogram(color="black", fill= heat.colors(round(100/binwidth), rev = T), binwidth = binwidth)
-
-# +scale_color_manual(values=c("#999999", "#E69F00", "#56B4E9"))
 p
 
-```
 
-```{r}
+#BODY AREA
 df = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) )
 
 ggplot(df, aes(x = area, y = counts)) +
@@ -119,60 +144,414 @@ ggplot(df, aes(x = area, y = counts)) +
   geom_text(aes(label = counts), vjust = -0.3) 
 ```
 
+And then we investigate about the correlation among themselves:
+
+```{r}
+par(mfrow=c(1,2))
+for (i in c(1:2,4:10))
+boxplot(burn$time ~ burn[,i], main=names(burn)[i], ylab = "time", xlab="")
+
+i=3
+plot(burn[,i], burn$time, xlab=names(burn)[i], ylab="time", ylim=c(0,100))
+```
+
+```{r}
+p=c()
+for(i in c(2, 4:9)){
+  p= c(p, t.test(burn$time ~ burn[,i])$p.value)
+}
+p
+
+p<0.05
+keep = p<0.05
+names(burn)[keep]
+```
+
+
+```{r warning=FALSE}
+# source: https://stackoverflow.com/questions/52554336/plot-the-equivalent-of-correlation-matrix-for-factors-categorical-data-and-mi
+df = burn[, 1:11]
+
+library(tidyverse)
+library(lsr)
+
+# function to get chi square p value and Cramers V
+f = function(x,y) {
+    tbl = df %>% select(x,y) %>% table()
+    chisq_pval = round(chisq.test(tbl)$p.value, 4)
+    cramV = round(cramersV(tbl), 4) 
+    data.frame(x, y, chisq_pval, cramV) }
+
+# create unique combinations of column names
+# sorting will help getting a better plot (upper triangular)
+df_comb = data.frame(t(combn(sort(names(df)), 2)), stringsAsFactors = F)
+
+# apply function to each variable combination
+df_res = map2_df(df_comb$X1, df_comb$X2, f)
+
+# plot results
+df_res %>%
+  ggplot(aes(x,y,fill=chisq_pval))+
+  geom_tile()+
+  geom_text(aes(x,y,label=round(cramV, digits = 2)))+
+  scale_fill_gradient(low="red", high="yellow")+
+  theme_classic()
+
+```
+
+```{r}
+library(ltm)
+
+biserial.cor(burn$time, burn$treatment)
+biserial.cor(burn$time, burn$gender)
+biserial.cor(burn$time, burn$head)
+biserial.cor(burn$time, burn$buttock)
+biserial.cor(burn$time, burn$torso)
+biserial.cor(burn$time, burn$upper.leg)
+biserial.cor(burn$time, burn$lower.leg)
+biserial.cor(burn$time, burn$respiratory.system)
+
+# biserial.cor(burn$time, burn$burn.type)
+
+```
+
+
+
 ## 3) Nonparametric analysis
 
 ### Estimation of the survival function
 
+The overall survival function of the study is
+
 ```{r}
+svf <- survfit(Surv(time, cens) ~ 1, burn)
 
-for(indice in c(2, 4:10)){
-# {indice = 4
+par(las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l", mar = c(5, 5, 4, 2))
+plot(svf, lwd = 2, col=c(1,2,2), xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+title( "Survival function" )
+```
 
-covariata = burn[,indice]
-n=length(levels(covariata))
-svf <- survfit(Surv(time, cens) ~ covariata + treatment, burn)
-# print(svf)
-# print(summary(svf))
+```{r}
+temp = min(which(svf$surv<=0.5))
+med_surv_time = svf$time[temp]
+```
+
+and the median survival time is `r med_surv_time` days.
+
+```{r}
+med_surv_time
+```
+
+but if we observe the survival function for different levels of the categorical covariates we notices very different patterns.
+
+first of all it is necessary to introduce our methodology: we want to study the effect of the two treatments on the patients, so we'll study their effect both individually and in combination with the other covariates.
+
+
+```{r}
+#treatment
+n=length(levels(burn$treatment))
+svf1 <- survfit(Surv(time, cens) ~ treatment, burn)
+
+names=c()
+for(i in 1:n){
+    names=c(names, paste("treatment=", levels(burn$treatment)[j], sep=""))
+  }
+
+par( las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$treatment), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+title( paste("Survival functions divided according to treatment" ))
+```
+
+```{R}
+library(rms)
+svf1 <- npsurv(Surv(time, cens) ~ treatment, burn)
+
+par(font = 2, font.axis = 2, font.lab = 4, las = 1, mar = c(5, 5, 4, 2))
+survplot(svf1, ylab = expression(bold(hat(S)(t))), col = 1:2, lwd = 3, xlab="Survival time [Days]")
+title("Survival functions according to treatment")
+abline(h=0.5, lty=2)
+```
+
+
+We can immediately appreciate a difference of the survival function in the two treatments, with *body cleansing* seeming to be generally more effective than *bathing care* in fighting or delaying the insurgence of Staphylococcus infection.
+
+```{r}
+#GENDER
+n=length(levels(burn$gender))
+svf <- survfit(Surv(time, cens) ~ gender + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ gender, burn)
 
 names=c()
 for(i in 1:n){
   for(j in 1:2){
-    names=c(names, paste(names(burn)[indice], "=", levels(covariata)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+    names=c(names, paste("gender=", levels(burn$gender)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
   }
 }
 
-par(las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
     mar = c(5, 5, 4, 2))
-plot(svf, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = T)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-title( paste("Survival functions divided according to", names(burn)[indice] ))
 
-}
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$gender), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to gender" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to gender" ))
+
+mtext("Survival functions divided according to gender", side = 3, line = -2, outer = TRUE)
 
 ```
 
-### Estimation of the median survival time
+- gender
+
+Comparing the survival function of men and women we notice that women show an overall higher survival probability 
+and we confirmed this trend also  through a bivariate analysis - dividing the observations both by gender and treatment used.
+
+<!-- When comparing the survival function of male and female patients, it can be seen that the -->
+<!-- survival function for females seems to decrease more rapidly in the first 5 years after the start -->
+<!-- of the study. The survival probability at the end of the study reaches 0.40 women, it reaches -->
+<!-- 0.50 for men. Towards the end of the observation time, the function shows huge jumps and -->
+<!-- is overall less smooth. This can be explained by the fact that the number of female patients -->
+<!-- was much less, so there is not enough data for females to make a fair comparison between the -->
+<!-- groups. Using the log-rank test to check the hypothesis that both functions are the same, -->
+<!-- with Chi-sq= 0.5 on 1 degree of freedom, a p-value of 0.5 is obtained. Therefore, one can -->
+<!-- conclude that there is no evidence that the survival times for male and female patients are -->
+<!-- different. -->
+
+- treatment:
+For both treatment groups the survival function behaves similarly for the first 5 years, then
+they move apart a little, with ddc treatment having a higher survival probability until the
+end of the study when both functions reach approximately the same level. The log-rank test,
+used on both groups shows the same result, with Chi-sq= 2.1 on 1 degree of freedom, we
+receive p= 0.2. Therefore, there is no significant difference to be found in the behavior of
+both survival functions.
+
+Then we study the influence of the location of the burn on the survival time:
 
 ```{r}
-for(indice in c(1:2, 4:10)){
-  
-covariata = burn[,indice]
-n=length(levels(covariata))
-svf <- survfit(Surv(time, cens) ~ covariata, burn, )
-print(svf)
+#head
+n=length(levels(burn$head))
+svf <- survfit(Surv(time, cens) ~ head + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ head, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("head=", levels(burn$head)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
 }
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$head), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to head" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to head" ))
+
+mtext("Survival functions divided according to head", side = 3, line = -2, outer = TRUE)
+
 ```
 
-DA MODIFICARE
+```{r}
+#buttock
+n=length(levels(burn$buttock))
+svf <- survfit(Surv(time, cens) ~ buttock + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ buttock, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("buttock=", levels(burn$buttock)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$buttock), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to buttock" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to buttock" ))
+
+mtext("Survival functions divided according to head", side = 3, line = -2, outer = TRUE)
+```
+
+```{r}
+#torso
+n=length(levels(burn$torso))
+svf <- survfit(Surv(time, cens) ~ torso + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ torso, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("torso=", levels(burn$torso)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$torso), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to torso" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to torso" ))
+
+mtext("Survival functions divided according to torso", side = 3, line = -2, outer = TRUE)
+```
+
+```{r}
+#upper.leg
+n=length(levels(burn$upper.leg))
+svf <- survfit(Surv(time, cens) ~ upper.leg + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ upper.leg, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("upper.leg=", levels(burn$upper.leg)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$upper.leg), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to upper.leg" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to upper.leg" ))
+
+mtext("Survival functions divided according to upper.leg", side = 3, line = -2, outer = TRUE)
+```
+
+```{r}
+#lower.leg
+n=length(levels(burn$lower.leg))
+svf <- survfit(Surv(time, cens) ~ lower.leg + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ lower.leg, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("lower.leg=", levels(burn$lower.leg)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$lower.leg), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to lower.leg" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to lower.leg" ))
+
+mtext("Survival functions divided according to lower.leg", side = 3, line = -2, outer = TRUE)
+```
+
+
+```{r}
+#burn.type
+n=length(levels(burn$burn.type))
+svf <- survfit(Surv(time, cens) ~ burn.type + treatment, burn)
+svf1 <- survfit(Surv(time, cens) ~ burn.type, burn)
+
+names=c()
+for(i in 1:n){
+  for(j in 1:2){
+    names=c(names, paste("burn.type=", levels(burn$burn.type)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+  }
+}
+
+par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+    mar = c(5, 5, 4, 2))
+
+#UNIVARIATE
+plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", levels(burn$burn.type), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to burn.type" ))
+
+#BIVARIATE
+plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
+     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
+abline(h=0.5, lty=2)
+legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
+# title( paste("Survival functions divided according to burn.type" ))
+
+mtext("Survival functions divided according to burn.type", side = 3, line = -2, outer = TRUE)
+```
+
+And finally we compare the severity of the different kinds of burn: *chemical*, *scalding*, *electrical* and *flame*.
+The scalding burn and the electrical one seem to be the most critical ones in the first days after the accident with the scalding reaching $\hat{S}(t)=0.667$ after 7 days and the electrical reaching $\hat{S}(t)=0.436$ after only 13 days (very little compared to the median survival time of `r med_surv_time` days).
 
 ### Comparison of survival functions by means of nonparametric tests such as the logrank test.
 
 SCRIVERE CON LATEX QUALE TEST VOGLIAMO FARE
 
 We use an (extended) Gehan test, which puts more weight on the smallest observations, to verify if the
-two survival functions are similar at the beginning. 
+two survival functions are similar at the beginning.
 
 <!-- The p-value we get is p = 0.3, so at level α = 0.05 -->
 <!-- we accept the null hypothesis, meaning that we don’t have enough evidence to state that they have a -->
