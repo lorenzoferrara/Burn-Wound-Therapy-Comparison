@@ -12,6 +12,7 @@ knitr::opts_chunk$set(
 	fig.align = "center",
 	warning = FALSE,
 	cache = TRUE,
+	include = FALSE,
 	echo = FALSE,
 	out.width = "70%",
 	tidy = TRUE,
@@ -21,19 +22,18 @@ knitr::opts_chunk$set(out.width = '70%')
 knitr::opts_chunk$set(fig.align = "center")
 knitr::opts_chunk$set(tidy.opts=list(width.cutoff=50), tidy=TRUE)
 library(knitr)
-# library(kableExtra)
-
+library(rms)
 library(survival)
 ```
 
 ```{r}
-burn <- read.table("Burn.txt", quote="\"", comment.char="")
+burn <- read.table("Burn.txt", skip = 32)
   
 colnames(burn) = c("treatment", "gender", "burn.percentage", "head", "buttock", "torso", "upper.leg", "lower.leg", "respiratory.system", "burn.type", "time", "cens")
 
 burn$gender = factor( burn$gender, levels = c(0,1), labels=c("Man", "Woman"))
 burn$treatment = factor( burn$treatment, levels = c(0,1), labels=c("bathing care", "body cleansing"))
-burn$burn.type = factor( burn$burn.type, levels = c(1, 2, 3, 4), labels=c("chemical", "scalding", "electrical", "flame"))
+burn$burn.type = factor( burn$burn.type, levels = c(1, 2, 3, 4), labels=c("Chemical", "Scalding", "Electrical", "Flame"))
 
 for(i in c(4:9))
   burn[,i] = as.factor(burn[,i])
@@ -47,25 +47,36 @@ head(burn)
 ## 1) Introduction
 
 ### Description of the problem
-It is generally known that infection is the chief reason for death and morbidity after burn injury, with it being responsible for 51% of the deaths, especially in the first 24h.
 
-Burn wounds lack epidermis and circulation, so they are the best culture media with a centigrade temperature of 37 degrees. Therefore, they are the best media for bacterial growth. A few hours after the burn (normally 4-5 hours after) the wound surface becomes contaminated with many bacterial flora, which will start to grow and multiply, reaching the vascular and lymphatic vessels and starting to disperse. At this point, bacteraemia and sepsis start.
+It is generally known that infection is the chief reason for death and morbidity after burn injury, with it being responsible for 51% of the deaths, especially in the first 24 hours. 
+<!-- (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4790211/) -->
 
-Usually the most frequent bacteria found in burn wound culture are Staphylococcus (55%), Pseudomonas aeruginosa (14.29%), Enterococcus (12.24%), E. coli (4%), Klebsiella and Proteus (both 2%).
+Indeed burn wounds lack epidermis and circulation, so they are the best culture media for bacterial growth. A few hours after the burn (normally 4-5 hours after) the wound surface becomes contaminated with many bacterial flora, which will start to grow and multiply, reaching the vascular and lymphatic vessels and starting to disperse. At this point, bacteraemia and sepsis start.
+However, due to the release of several cell mediators, burn patients have deficiencies in their immune system and cannot tolerate this invasion so, if not treated properly, septic shock, multiple organ failure and most probably death will follow.
+<!-- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5946749/ -->
 
-Burn severity and the extent of burn injury are major risk factors for the development of infection in burn patients. Indeed burns that involve a larger surface area of the body, and burns that are deeper or more severe, are more likely to become infected.
+Usually the most frequent bacteria found in burn wound culture are Staphylococcus (55%), Pseudomonas aeruginosa (14.29%), Enterococcus (12.24%), Escherichia coli (4%), Klebsiella and Proteus (both 2%).
 
-Additionally, burns caused by certain types of insults, such as chemical or electrical burns, may be at a higher risk of infection than burns caused by other types of insults, such as thermal burns.
+Burn severity and the extent of burn injury are major risk factors for the development of infection in burn patients. As a matter of fact burns that involve a larger surface area of the body and burns that are deeper or more severe are more likely to become infected.
 
 ### Goals 
 
-Our goal is to compare both burn treatments ("bathing care"  and "body cleansing") with respect to the time until a Staphylococcus infection.
+Our goal is to study how two treatments, a standard one (bathing care) and an alternative one (body cleansing), affect the time until a Staphylococcus infection.
 
-For that reason, we will focus on long time effect of an infection which has not been adequately treated or has not been treated on time.
+The second one can be considered part of the *detoxification* practices, a series of alternative medicine systems whose purpose is the one to perform a physiological or medicinal removal of toxic substances from a living organism.
+
+This study will focus on
+
+long time effect of an infection which has not been adequately treated or has not been treated on time.
+
+<!-- In the following report, the different variables will be analyzed, with their influence on the -->
+<!-- survival function of the patients in the study. We will evaluate the impact the different -->
+<!-- measures have on the health condition of the patients to conclude which are the most crucial -->
+<!-- aspects to ensure the longest survival time. -->
 
 ## 2) Descriptive analysis
 
-We notice that 69% of the dataset consists of censored observations, which might lead to a lower accuracy and effectiveness of the result of our analyses.
+First it's important to point out that 69% of the dataset consists of censored observations, which might lead to a lower accuracy and effectiveness of the result of our analyses.
 
 ```{r}
 round(sum(burn$cens==0)/length(burn$cens)*100, 0)
@@ -91,57 +102,64 @@ round(sum(burn$cens==0)/length(burn$cens)*100, 0)
 ```
 
 
-First we observe how our data are distributed:
+Let's start our preliminary analyses observing how our data are distributed:
 
 DA METTER IN UN MFROW(2,2), MA GGPLOT FA LE BIZZE
 ```{r}
 library(ggplot2)
 library(dplyr)
 library(patchwork)
+library(gridExtra)
 
 #BURN TYPE
 df <- burn %>%
   group_by(burn.type) %>%
-  summarise(counts = n())
+  summarise(frequency = n())
 
-ggplot(df, aes(x = burn.type, y = counts)) +
+plot1 = ggplot(df, aes(x = burn.type, y = frequency)) +
   geom_bar(fill = c("green3", "#0073C2FF", "yellow2", "red3"), stat = "identity") +
-  geom_text(aes(label = counts), vjust = -0.3) 
+  geom_text(aes(label = frequency), vjust = -0.3) +
+  xlab("Type of burn")
 
 
 #GENDER
 df <- burn %>%
   group_by(gender) %>%
-  summarise(counts = n())
+  summarise(frequency = n())
 
-ggplot(df, aes(x = gender, y = counts)) +
+plot2 = ggplot(df, aes(x = gender, y = frequency)) +
   geom_bar(fill = c("#0073C2FF", "salmon2"), stat = "identity") + 
-  geom_text(aes(label = counts), vjust = -0.3)
+  geom_text(aes(label = frequency), vjust = -0.3) +
+    xlab("Gender")
 
 
 #TREATMENT
 df <- burn %>%
   group_by(treatment) %>%
-  summarise(counts = n())
+  summarise(frequency = n())
 
-ggplot(df, aes(x = treatment, y = counts)) +
+plot3 = ggplot(df, aes(x = treatment, y = frequency)) +
   geom_bar(fill = c("royalblue", "orange2"), stat = "identity") + 
-  geom_text(aes(label = counts), vjust = -0.3)
+  geom_text(aes(label = frequency), vjust = -0.3) +
+    xlab("Treatment")
+
 
 
 #BURN PERCENTAGE
 binwidth = 4.5
-p<-ggplot(burn, aes(x=burn.percentage)) + 
-  geom_histogram(color="black", fill= heat.colors(round(100/binwidth), rev = T), binwidth = binwidth)
-p
-
+plot4 = ggplot(burn, aes(x=burn.percentage)) + 
+  geom_histogram(color="black", fill= heat.colors(round(100/binwidth), rev = T), binwidth = binwidth) +
+    xlab("Total percentage of burns")
 
 #BODY AREA
-df = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) )
+df = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), frequency = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) )
 
-ggplot(df, aes(x = area, y = counts)) +
+plot5 = ggplot(df, aes(x = area, y = frequency)) +
   geom_bar(fill = "#0073C2FF", stat = "identity") +
-  geom_text(aes(label = counts), vjust = -0.3) 
+  geom_text(aes(label = frequency), vjust = -0.3) +
+    xlab("Part of the body burnt")
+
+grid.arrange(plot1, plot2, plot3, plot4, plot5, ncol=3)
 ```
 
 And then we investigate about the correlation among themselves:
@@ -164,11 +182,13 @@ p
 
 p<0.05
 keep = p<0.05
+names(burn)
+
 names(burn)[keep]
 ```
 
 
-```{r warning=FALSE}
+```{r eval=FALSE, warning=FALSE, include=FALSE}
 # source: https://stackoverflow.com/questions/52554336/plot-the-equivalent-of-correlation-matrix-for-factors-categorical-data-and-mi
 df = burn[, 1:11]
 
@@ -219,18 +239,16 @@ biserial.cor(burn$time, burn$respiratory.system)
 
 ## 3) Nonparametric analysis
 
-### Estimation of the survival function
+The overall survival function is
 
-The overall survival function of the study is
-
-```{r}
+```{r include = T}
 svf <- survfit(Surv(time, cens) ~ 1, burn)
 
 par(las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l", mar = c(5, 5, 4, 2))
 plot(svf, lwd = 2, col=c(1,2,2), xlab = "Survival time [Days]",
      ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
 abline(h=0.5, lty=2)
-title( "Survival function" )
+title("Survival function")
 ```
 
 ```{r}
@@ -240,48 +258,38 @@ med_surv_time = svf$time[temp]
 
 and the median survival time is `r med_surv_time` days.
 
-```{r}
-med_surv_time
-```
+But if we observe the survival function for different levels of the categorical covariates we can notice very different patterns.
 
-but if we observe the survival function for different levels of the categorical covariates we notices very different patterns.
-
-first of all it is necessary to introduce our methodology: we want to study the effect of the two treatments on the patients, so we'll study their effect both individually and in combination with the other covariates.
-
-
-```{r}
-#treatment
-n=length(levels(burn$treatment))
-svf1 <- survfit(Surv(time, cens) ~ treatment, burn)
-
-names=c()
-for(i in 1:n){
-    names=c(names, paste("treatment=", levels(burn$treatment)[j], sep=""))
-  }
-
-par( las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
-
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$treatment), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-title( paste("Survival functions divided according to treatment" ))
-```
+Since we want to study the effect of the two treatments on the patients, we'll study their effect both individually and in combination with the other covariates.
 
 ```{R}
-library(rms)
-svf1 <- npsurv(Surv(time, cens) ~ treatment, burn)
+svf <- npsurv(Surv(time, cens) ~ treatment, burn)
 
 par(font = 2, font.axis = 2, font.lab = 4, las = 1, mar = c(5, 5, 4, 2))
-survplot(svf1, ylab = expression(bold(hat(S)(t))), col = 1:2, lwd = 3, xlab="Survival time [Days]")
+survplot(svf, ylab = expression(bold(hat(S)(t))), col = 1:2, lwd = 3, xlab="Survival time [Days]")
 title("Survival functions according to treatment")
 abline(h=0.5, lty=2)
 ```
 
+```{r}
+formula = with(burn, Surv(time, cens) ~ treatment)
 
-We can immediately appreciate a difference of the survival function in the two treatments, with *body cleansing* seeming to be generally more effective than *bathing care* in fighting or delaying the insurgence of Staphylococcus infection.
+library(FHtest)
+FHtestrcc(formula, rho = 1, lambda = 1)
+```
+
+<!-- - treatment: -->
+<!-- For both treatment groups the survival function behaves similarly for the first 5 years, then -->
+<!-- they move apart a little, with ddc treatment having a higher survival probability until the -->
+<!-- end of the study when both functions reach approximately the same level. The log-rank test, -->
+<!-- used on both groups shows the same result, with Chi-sq= 2.1 on 1 degree of freedom, we -->
+<!-- receive p= 0.2. Therefore, there is no significant difference to be found in the behavior of -->
+<!-- both survival functions. -->
+
+**Treatment**
+
+We can immediately appreciate a difference of the survival function in the two treatments. They are stochastically ordered, with *body cleansing* being generally more effective than *bathing care* in fighting or delaying the insurgence of Staphylococcus infection. They are both quite smooth and stabilize respectively on the  value 0.662 and 0.404 after 51 days.
+Therefore, to test the difference between these two survival functions we perform a Fleming-Harrington test with $\rho=1$ and $\lambda=1$. This test (with $pvalue=0.4$) confirms at level 5% that there is a significant difference in the central part of the infection process.
 
 ```{r}
 #GENDER
@@ -292,7 +300,7 @@ svf1 <- survfit(Surv(time, cens) ~ gender, burn)
 names=c()
 for(i in 1:n){
   for(j in 1:2){
-    names=c(names, paste("gender=", levels(burn$gender)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
+    names=c(names, paste(levels(burn$gender)[i], " receiving ", levels(burn$treatment)[j], sep=""))
   }
 }
 
@@ -304,213 +312,71 @@ plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival t
      ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
 abline(h=0.5, lty=2)
 legend("bottomleft", levels(burn$gender), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to gender" ))
+# title( paste("Survival functions according to gender" ))
 
 #BIVARIATE
 plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
      ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
 abline(h=0.5, lty=2)
 legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to gender" ))
+# title( paste("Survival functions according to gender" ))
 
-mtext("Survival functions divided according to gender", side = 3, line = -2, outer = TRUE)
-
-```
-
-- gender
-
-Comparing the survival function of men and women we notice that women show an overall higher survival probability 
-and we confirmed this trend also  through a bivariate analysis - dividing the observations both by gender and treatment used.
-
-<!-- When comparing the survival function of male and female patients, it can be seen that the -->
-<!-- survival function for females seems to decrease more rapidly in the first 5 years after the start -->
-<!-- of the study. The survival probability at the end of the study reaches 0.40 women, it reaches -->
-<!-- 0.50 for men. Towards the end of the observation time, the function shows huge jumps and -->
-<!-- is overall less smooth. This can be explained by the fact that the number of female patients -->
-<!-- was much less, so there is not enough data for females to make a fair comparison between the -->
-<!-- groups. Using the log-rank test to check the hypothesis that both functions are the same, -->
-<!-- with Chi-sq= 0.5 on 1 degree of freedom, a p-value of 0.5 is obtained. Therefore, one can -->
-<!-- conclude that there is no evidence that the survival times for male and female patients are -->
-<!-- different. -->
-
-- treatment:
-For both treatment groups the survival function behaves similarly for the first 5 years, then
-they move apart a little, with ddc treatment having a higher survival probability until the
-end of the study when both functions reach approximately the same level. The log-rank test,
-used on both groups shows the same result, with Chi-sq= 2.1 on 1 degree of freedom, we
-receive p= 0.2. Therefore, there is no significant difference to be found in the behavior of
-both survival functions.
-
-Then we study the influence of the location of the burn on the survival time:
-
-```{r}
-#head
-n=length(levels(burn$head))
-svf <- survfit(Surv(time, cens) ~ head + treatment, burn)
-svf1 <- survfit(Surv(time, cens) ~ head, burn)
-
-names=c()
-for(i in 1:n){
-  for(j in 1:2){
-    names=c(names, paste("head=", levels(burn$head)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
-  }
-}
-
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
-
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$head), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to head" ))
-
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to head" ))
-
-mtext("Survival functions divided according to head", side = 3, line = -2, outer = TRUE)
+mtext("Survival functions according to gender", side = 3, line = -2, outer = TRUE)
 
 ```
 
+**Gender**
+
+Comparing the survival functions of men and women we notice that women show an overall higher survival probability, even though the two curves meet at around 40 days. We have also studied this trend through a bivariate analysis, dividing the observations both by gender and by treatment. This approach confirms a generally higher survival probability in women with respect to men and a remarkable difference in the two treatments, especially in the long term, to the point that men receiving *bathing care* reach $\hat{S}(t)=0.16$ after 51 days.
+However, if we perform a Logrank test on the gender variable
+$$ \begin{cases} H_0: S_{men}(t)=S_{women}(t) \\ H_1: S_{men}(t) \neq S_{women}(t)  \end{cases} $$
+we get a $\chi^2$ statistic of 2.4 on 1 degree of freedom, giving us a p-value of $0.1$. Therefore, we don't have enough evidence to say that the survival times for male and female patients are different.
+
 ```{r}
-#buttock
-n=length(levels(burn$buttock))
-svf <- survfit(Surv(time, cens) ~ buttock + treatment, burn)
-svf1 <- survfit(Surv(time, cens) ~ buttock, burn)
-
-names=c()
-for(i in 1:n){
-  for(j in 1:2){
-    names=c(names, paste("buttock=", levels(burn$buttock)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
-  }
-}
-
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
-
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$buttock), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to buttock" ))
-
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to buttock" ))
-
-mtext("Survival functions divided according to head", side = 3, line = -2, outer = TRUE)
+formula = with(burn, Surv(time, cens) ~ gender)
+survdiff(formula)
 ```
 
-```{r}
-#torso
-n=length(levels(burn$torso))
-svf <- survfit(Surv(time, cens) ~ torso + treatment, burn)
-svf1 <- survfit(Surv(time, cens) ~ torso, burn)
+**Body parts**
 
-names=c()
-for(i in 1:n){
-  for(j in 1:2){
-    names=c(names, paste("torso=", levels(burn$torso)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
-  }
-}
+We have then studied the influence of the location of the burn on the observed survival times.
+In almost all of these variables a graphical analysis suggests that the differences could be considered negligible, since the survival functions tend to overlap or follow very similar patterns. Only in the buttock variable we find a diverging pattern from day 0 to day 51, when the curves cross and remain quite close.
 
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
+To corroborate this hypothesis we proceed to perform Logrank tests on these variables:
 
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$torso), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to torso" ))
+$$ \begin{cases} H_0: S_0(t)=S_1(t) \\ H_1: S_0(t) \neq S_1(t)  \end{cases} $$
 
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to torso" ))
+It is probably relevant to remind the reader that the aim of this study is to analyse the treatments' effects in relation to the available covariates; however in this case no stratified test has been performed since the groups were quite balanced (maybe due to a particular design of the experiment), meaning that the two treatments were present in an approximately equal number of cases throughout the study of all the variables.
 
-mtext("Survival functions divided according to torso", side = 3, line = -2, outer = TRUE)
-```
+The tests are all not significant, most of them with very high p-values (in the range $[0.45, 0.73]$). It is interesting to point out that buttock is the one with the smallest pvalue ($0.27$), resulting the most significant among the location variables.
 
 ```{r}
-#upper.leg
-n=length(levels(burn$upper.leg))
-svf <- survfit(Surv(time, cens) ~ upper.leg + treatment, burn)
-svf1 <- survfit(Surv(time, cens) ~ upper.leg, burn)
+pvalues=c()
 
-names=c()
-for(i in 1:n){
-  for(j in 1:2){
-    names=c(names, paste("upper.leg=", levels(burn$upper.leg)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
-  }
-}
+formula = with(burn, Surv(time, cens) ~ head)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
+formula = with(burn, Surv(time, cens) ~ torso)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$upper.leg), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to upper.leg" ))
+formula = with(burn, Surv(time, cens) ~ buttock)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to upper.leg" ))
+formula = with(burn, Surv(time, cens) ~ upper.leg)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-mtext("Survival functions divided according to upper.leg", side = 3, line = -2, outer = TRUE)
-```
+formula = with(burn, Surv(time, cens) ~ lower.leg)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-```{r}
-#lower.leg
-n=length(levels(burn$lower.leg))
-svf <- survfit(Surv(time, cens) ~ lower.leg + treatment, burn)
-svf1 <- survfit(Surv(time, cens) ~ lower.leg, burn)
+formula = with(burn, Surv(time, cens) ~ respiratory.system)
+pvalues = c(pvalues, 1 - pchisq(survdiff(formula)$chisq, 1))
 
-names=c()
-for(i in 1:n){
-  for(j in 1:2){
-    names=c(names, paste("lower.leg=", levels(burn$lower.leg)[i], " and treatment=", levels(burn$treatment)[j], sep=""))
-  }
-}
-
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
-    mar = c(5, 5, 4, 2))
-
-#UNIVARIATE
-plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", levels(burn$lower.leg), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to lower.leg" ))
-
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to lower.leg" ))
-
-mtext("Survival functions divided according to lower.leg", side = 3, line = -2, outer = TRUE)
+df = data.frame(body_part = c("head","torso", "buttock", "upper_leg","lower_leg", "respiratory_system"), pvalue = pvalues)
+df
 ```
 
 
-```{r}
+```{r include=T}
 #burn.type
 n=length(levels(burn$burn.type))
 svf <- survfit(Surv(time, cens) ~ burn.type + treatment, burn)
@@ -523,7 +389,7 @@ for(i in 1:n){
   }
 }
 
-par( mfrow=c(1,2), las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
+par( las = 1, font = 2, font.axis = 2, font.lab = 4, bty = "l",
     mar = c(5, 5, 4, 2))
 
 #UNIVARIATE
@@ -531,306 +397,130 @@ plot(svf1, col = 1:n, lty = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival t
      ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
 abline(h=0.5, lty=2)
 legend("bottomleft", levels(burn$burn.type), lwd = 3, col = 1:n, lty = c(rep(1, n), rep(3, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to burn.type" ))
+title( paste("Survival functions according to burn type" ))
 
-#BIVARIATE
-plot(svf, lty = 1:n, col = c(rep(1, n), rep(2, n)), lwd = 3, xlab = "Survival time [Days]",
-     ylab = expression(bolditalic(hat(S)(t))), xaxs = "i", yaxs = "i", mark.time = F)
-abline(h=0.5, lty=2)
-legend("bottomleft", names, lwd = 3, lty = c(1,3), col = c(rep(1, n), rep(2, n)), bty = "n", cex=0.8)
-# title( paste("Survival functions divided according to burn.type" ))
 
-mtext("Survival functions divided according to burn.type", side = 3, line = -2, outer = TRUE)
+# mtext("Survival functions according to burn type", side = 3, line = -2, outer = TRUE)
 ```
 
-And finally we compare the severity of the different kinds of burn: *chemical*, *scalding*, *electrical* and *flame*.
-The scalding burn and the electrical one seem to be the most critical ones in the first days after the accident with the scalding reaching $\hat{S}(t)=0.667$ after 7 days and the electrical reaching $\hat{S}(t)=0.436$ after only 13 days (very little compared to the median survival time of `r med_surv_time` days).
+**Burn type**
 
-### Comparison of survival functions by means of nonparametric tests such as the logrank test.
+Finally, we have compared the severity of the different kinds of burn, *Chemical*, *Scalding*, *Electrical* and *Flame*. 
 
-SCRIVERE CON LATEX QUALE TEST VOGLIAMO FARE
-
-We use an (extended) Gehan test, which puts more weight on the smallest observations, to verify if the
-two survival functions are similar at the beginning.
-
-<!-- The p-value we get is p = 0.3, so at level α = 0.05 -->
-<!-- we accept the null hypothesis, meaning that we don’t have enough evidence to state that they have a -->
-<!-- different short-term effect. -->
-
-This function implements the $G_\rho$ family of Harrington and Fleming (1982), with weights on
-each death of $S(t)^\rho$, where $S(t)$ is the Kaplan-Meier estimate of survival. 
-With $\rho = 0$ this is the log-rank test, and with $\rho = 1$ it is equivalent to the Peto & Peto modification
-of the Gehan-Wilcoxon test.
-
-if we use $\rho<0$, for example $\rho=-1$, we'll give more weight to bigger survival times (?????), so we'll be able to test for long terms differences.  
-
-```{R}
-formula = with(burn, Surv(time, cens) ~ treatment + gender)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + head)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + buttock)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + torso)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + upper.leg)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + lower.leg)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + respiratory.system)
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
-survdiff(formula, rho=1)                        
-```
-
-With these data, a stratified test might be a good idea, due to the unbalanced design of the experiment, but also because our ultimate goal is to verify the effect of each treatment in each specific medical situation (with specific burn locations and percentage of body burnt)
-
-```{R}
-formula = with(burn, Surv(time, cens) ~ treatment + strata(gender))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(head))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(buttock))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(torso))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(upper.leg))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(lower.leg))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(respiratory.system))
-survdiff(formula)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
-survdiff(formula)                        
-```
-
-```{R}
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(gender))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(head))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(buttock))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(torso))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(upper.leg))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(lower.leg))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + strata(respiratory.system))
-survdiff(formula, rho=1)                        
-
-formula = with(burn, Surv(time, cens) ~ treatment + burn.type)
-survdiff(formula, rho=1)                        
-```
+- The Scalding burn and the Electrical one seem to be the most critical ones in the first days after the accident with the Scalding reaching $\hat{S}(t)=0.667$ after 7 days and the Electrical reaching $\hat{S}(t)=0.436$ after only 13 days (very little compared to the median survival time of `r med_surv_time` days).
+- The burn type with the highest survival probability is the Chemical, however this level has only one uncensored observation so we do not enough data to make a fair comparison between the groups. 
+- Lastly, the Flame burn shows a smoother trend, reaching $\hat{S}(t)=0.473$ after 51 days.
+In general this variable presents quite diverse patterns. This is can be confirmed through a Logrank test: 
+$$ \begin{cases} H_0: S_{Chemical}(t)=S_{Scalding}(t)=S_{Electrical}(t)=S_{Flame}(t) \\ H_1: \exists \space i,j \text{ s.t. } S_i(t) \neq S_j(t)  \end{cases} $$
 
 ```{r}
-formula = with(burn, Surv(time, cens) ~ treatment + strata(gender) + strata(head) + strata(buttock) + strata(torso) + strata(upper.leg) + strata(lower.leg) + strata(respiratory.system) + strata(burn.type))
-
-survdiff(formula, rho=1)
-```
-
-```{r}
-p=c()
-for(rho in seq(-4, 4, length=30)){
-  sdf = survdiff(formula, rho=rho)
-  p= c(p, 1 - pchisq(sdf$chisq, length(sdf$n) - 1))
-}
-plot(seq(-4, 4, length=30), p)
-abline(h=0.05, lty=2, col="red")
-seq(-4, 4, length=30)[which.min(p)]
-```
-
-```{r}
-survdiff(formula, rho=-1)
+formula = with(burn, Surv(time, cens) ~ burn.type)
+survdiff(formula)
 ```
 
 ## 4) Fit of a parametric survival model
 
 ### Fit of a Weibull, log-logistic, or lognormal model.
 
+<!-- After observing that all the variables corresponding to the locations of the burn (except for the buttock indicator variable) were not significant -->
+
+We'll fit the Weibull model:
+$$Y = \ln T = \mu + \gamma_1\cdot treatment + \gamma_2\cdot gender + \gamma_3\cdot head + \gamma_4\cdot buttock + \gamma_5\cdot torso + \gamma_6\cdot upper \textunderscore leg$$ 
+$$+ \gamma_7\cdot lower \textunderscore leg + \gamma_8\cdot respiratory \textunderscore system + \gamma_9\cdot burn \textunderscore type + \gamma_{10}\cdot burn\textunderscore percentage + \sigma \cdot W$$ 
+
 ```{r}
 #Weibull
 surv = with(burn, Surv(time, cens))
-
-weibfit = survreg(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(weibfit) 
 ```
 
-```{r}
-weibfit = survreg(surv ~ treatment + gender + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(weibfit) 
-```
+Then we decide to apply a step-wise feature selection and reduce the model to a simpler one, using as classifying criterion the AIC
+$$AIC = 2k - 2\ln(\text{maxLikelihood}), \text{ with } k=\text{n° of variables}$$
+which estimates the trade-off between the goodness of fit of the model and its simplicity.
+
+The new model obtained is:
+$$Y = \ln T = \mu + \gamma_1\cdot treatment + \gamma_2\cdot gender + \gamma_4\cdot buttock + \gamma_9\cdot burn \textunderscore type + \sigma \cdot W$$ 
+
+We can notice how this result is somehow coherent with the tests we have previously performed on the survival times since both approaches have led to keeping and discarding the same sets of variables. /
+The same set of variable is kept after following the same procedure for a Log-logistic model. Therefore we consider ourselves satisfied with this feature selection phase and we can now proceed to inspect the residuals of the two models.
 
 ```{r}
-weibfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(weibfit) 
-```
-
-```{r}
-weibfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + burn.type, data = burn)
-summary(weibfit) 
-```
-
-```{r}
-weibfit = survreg(surv ~ treatment + gender + buttock + lower.leg + burn.type, data = burn)
-summary(weibfit) 
-```
-
-```{r}
-weibfit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn)
-summary(weibfit) 
-```
-
-Residuals:
-```{r}
-weibpred <- predict(weibfit, type = "linear")
-resids <- (log(burn$time) - weibpred) / weibfit$scale
-
-par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0),
-    mar = c(5, 5, 4, 2))
-plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 3, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
-title("Residuals of the Weibull regression model")
+weib_fit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn)
+weib_pred <- predict(weib_fit, type = "linear")
+weib_resids <- (log(burn$time) - weib_pred) / weib_fit$scale
 
 survgumb <- function(x) {     #theoretical survival function
   return(exp(-exp(x)))
 }
-
-curve(survgumb(x), from = min(resids), to = max(resids), col = 2, lwd = 3,
-      add = TRUE)
-legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Gumbel Distribution"),
-       col = c(1, 1, 2), lty = c(1, 2, 1), lwd = 3, bty = "n")
-```
-
-
-Let's look a bit closer:
-
-```{r out.width = '80%'}
-par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0),
-    mar = c(5, 5, 4, 2))
-plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 3, ylab = expression(bold(hat(S)(t))) , yaxs = "i", xlim=c(-4, -2), ylim=c(0.9, 1))
-title("Residuals of the Weibull regression model")
-
-survgumb <- function(x) {
-  return(exp(-exp(x)))
-}
-
-curve(survgumb(x), from = min(resids), to = max(resids), col = 2, lwd = 3,
-      add = TRUE)
-legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Gumbel Distribution"),
-       col = c(1, 1, 2), lty = c(1, 2, 1), lwd = 3, bty = "n")
-```
-
--------------------------------
--------------------------------
-
-```{r}
-logfit = survreg(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
 ```
 
 ```{r}
-logfit = survreg(surv ~ treatment + gender + head + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
-```
-
-```{r}
-logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + respiratory.system + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
-```
-
-```{r}
-logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + lower.leg + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
-```
-
-```{r}
-logfit = survreg(surv ~ treatment + gender + buttock + upper.leg + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
-```
-
-```{r}
-logfit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn, dist = "loglogistic")
-summary(logfit) 
-```
-
-```{R}
-logpred <- predict(logfit, type = "linear")
-resids <- (log(burn$time) - logpred) / logfit$scale
-
-par(font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0), mar = c(4.8, 5, 2.5, 2))
-plot(survfit(Surv(resids, burn$cens) ~ 1), xlab = "days", lwd = 2, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
-title("Residuals of the Log-logistic regression model")
+loglog_fit = survreg(surv ~ treatment + gender + buttock + burn.type, data = burn, dist = "loglogistic")
+loglog_pred <- predict(loglog_fit, type = "linear")
+loglog_resids <- (log(burn$time) - loglog_pred) / loglog_fit$scale
 
 logistic <- function(x) {  #theoretical survival function
   return(1/(1+exp(x)))
 }
+```
 
-curve(logistic(x), from = min(resids), to = max(resids), col = 2, lwd = 2,
+```{r include = T}
+par(mfrow=c(1,2), font = 2, font.lab = 4, font.axis = 2, las = 1, oma = c(0, 0, 1, 0), mar = c(4.8, 5, 2.5, 2))
+
+#WEIBULL
+plot(survfit(Surv(weib_resids, burn$cens) ~ 1), xlab = "days", lwd = 2, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
+title("Weibull model")
+curve(survgumb(x), from = min(weib_resids), to = max(weib_resids), col = 2, lwd = 2,
+      add = TRUE)
+legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Gumbel Distribution"),
+       col = c(1, 1, 2), lty = c(1, 2, 1), lwd = 3, bty = "n", cex=0.85)
+
+#LOGLOGISTIC
+plot(survfit(Surv(loglog_resids, burn$cens) ~ 1), xlab = "days", lwd = 2, ylab = expression(bold(hat(S)(t))) , yaxs = "i")
+title("Log-logistic model")
+curve(logistic(x), from = min(loglog_resids), to = max(loglog_resids), col = 2, lwd = 2,
       add = TRUE)
 legend("bottomleft", c("Empirical Residuals", "95% C.I.", "Stand. Logistic Distribution"),
-       col = c(1, 1, 2), lty = c(1, 3, 1), lwd = 3, bty = "n")
+       col = c(1, 1, 2), lty = c(1, 3, 1), lwd = 3, bty = "n", cex=0.85)
 ```
+
+From a graphical analysis, in both the models the residuals seem to resemble quite much the theoretical ones, with almost all of the functions being inside the confidence intervals. Nonetheless we can notice how the Log-logistic model seems to have a slightly better behavior, being completely inside the intervals and closer to the empirical survival function.
+
+This is also confirmed by the comparison of the logLikelihood of the models, with the Log-logistic having the highest value.
+
+```{r include = T}
+df = data.frame(distribution = c("Weibull", "Log-logistic"), Loglikelihood = c(weib_fit$loglik[2], loglog_fit$loglik[2]))
+df
+```
+
+Therefore we choose the Log-logistic model as the optimal one to describe our phenomenon and we proceed to interpret it.
 
 ### Interpretation of the model fit.
 
+It is known that a Log-logistic model can be written as a proportional odds model with respect to a baseline $Z=0$ as:
+$$\frac{S(t|Z)}{1-S(t|Z)} = \exp(\frac{\gamma'Z}{\sigma}) \cdot \frac{S(t|Z=0)}{1-S(t|Z=0)}$$
+
+So that $\exp(\frac{\gamma_i Z_i}{\sigma})$ can be interpreted as the Odds Ratio between the $i^{th}$ covariate and the baseline: Man who received a burn of type *Chemical*.\
+While the general expression of the accelerating factor for a single variable $Z_i$ is $AF = e^{\gamma_i Z_i}$
 
 
-### Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor.
+allows a representation as a proportional odds (PO) model.
+
+```{r}
+df = data.frame(gamma = coef(loglog_fit), OR = exp(coef(loglog_fit)/loglog_fit$scale), AFT = exp(-coef(loglog_fit)))[-1,]
+df
+```
+
+The Odds Ratio represents the ratio of the odds of an event occurring in one group to the odds of the event
+occurring in another group. \
+In our case we can observe how, for each time t, the odds of surviving under the alternative treatment (body cleansing) are 2.37 times larger than the ones under the standard treatment (bathing care), confirming the considerations made above about the effectiveness of such treatments.\
+In the same way we can infer that, according to the model, the surviving odds for a woman are more than double the odds of a woman (precisely 2.25).\
+In addition, thanks to the low OR in the buttock variable ($OR=0.44$) we can identify it as a **risk factor**: a person who burns himself on his buttock can see his survival odds reduced by almost half. \
+Finally, comparing the Odds Ratios of the burn type variable, we can once again confirm how grave an Electrical burn is with respect to the other types (with its odds being 5% of the chemical odds, 24% of the scalding odds and 17% of the flame odds). The Chemical reaffirms itself as the less dangerous, while Scalding and Flame can be deemed to be of almost comparable risk. 
+
+Analogous conclusions can be drawn by analyzing the Acceleration Factor since it indicates how the lifespan of an individual is accelerated or decelerated by a specific covariate. In particular if $AF_i<1$, this means that the covariate is extending the survival time.
+Therefore we'll deduce that both being woman and using the alternative treatment will almost double the lifespan, while burning himself in the buttock and undergoing a Scalding/Electrical/Flame burn will reduce the lifespan respectively by a factor of 2, 4, 15 and 3.  
 
 ## 5) Fit of a semi-parametric model
-
-The fit of a Cox model
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + head + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(cox1)
-```
-
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + buttock + torso + upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(cox1)
-```
-
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + lower.leg + respiratory.system + burn.type, data = burn)
-summary(cox1)
-```
-
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + lower.leg + burn.type, data = burn)
-summary(cox1)
-```
-
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + buttock+ upper.leg + burn.type, data = burn)
-summary(cox1)
-```
-
-```{R}
-cox1 <- coxph(surv ~ treatment + gender + buttock + burn.type, data = burn)
-summary(cox1)
-```
 
 ### Fit of the proportional hazards models.
 
