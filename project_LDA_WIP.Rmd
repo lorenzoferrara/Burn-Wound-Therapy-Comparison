@@ -93,19 +93,9 @@ Burns are a significant cause of morbidity and mortality, with infection being t
 
 The most common bacteria found in burn wound culture are Staphylococcus (55%), Pseudomonas aeruginosa (14.29%), Enterococcus (12.24%), Escherichia coli (4%), Klebsiella, and Proteus (both 2%). The severity and extent of burn injury are major risk factors for the development of infection in burn patients. Burns that involve a larger surface area of the body and burns that are deeper or more severe have a higher risk of becoming infected.
 
-<!-- (https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4790211/) -->
-
-
-<!-- https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5946749/ -->
-
 In order to prevent and manage infection in burn patients, various treatment methods have been developed. Two commonly used methods are bathing care and body cleansing. Bathing care involves the daily cleaning of the burn wound with a mild soap and water, followed by the application of a topical antimicrobial agent. Body cleansing, on the other hand, involves the use of an antiseptic solution, such as chlorhexidine, to cleanse the wound. Both methods aim to reduce bacterial colonization and prevent infection. However, the effectiveness of these treatments may vary depending on the type and severity of the burn, as well as the specific bacteria present in the wound. 
 
 This report aims to compare the effectiveness of bathing care and body cleansing in the management of burn wounds, using a dataset of 154 patients who have been treated with one of these methods.
-
-<!-- In the following report, the different variables will be analyzed, with their influence on the -->
-<!-- survival function of the patients in the study. We will evaluate the impact the different -->
-<!-- measures have on the health condition of the patients to conclude which are the most crucial -->
-<!-- aspects to ensure the longest survival time. -->
 
 \newpage
 
@@ -488,23 +478,28 @@ As a result, we have chosen the Log-logistic model as the optimal one to describ
 
 ## Interpretation of the model fit.
 
+Even though this model has been reached after a feature selection phase, not all the variables are significant, in terms of p-value:
+
+- the buttock variable and the treatment variable have respectively $p-value=0.047$ and $p-value=0.02$
+- the burn.type variable has its electrical level very significant, with a p-value of 0.018
+- the gender, with a p-value of 0.087, is the only one which cannot be considered significant at level 5% 
+
+Nonetheless the model fit is on the whole good, with a global p-value of 0.0033 and the best performance with regard to the Likelihood and the complexity.
+
 ## Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor
 
 It is well known that a Log-logistic model can be represented as a proportional odds model, with respect to a baseline $Z=0$, as follows:
 $$\frac{S(t|Z)}{1-S(t|Z)} = \exp(\frac{\gamma'Z}{\sigma}) \cdot \frac{S(t|Z=0)}{1-S(t|Z=0)}$$
 
 
-This allows for the interpretation of $\exp(\frac{\gamma_i Z_i}{\sigma})$ as the Odds Ratio between the $i^{th}$ covariate and the baseline, in this case, a man who received a burn of type Chemical. Additionally, the general expression of the accelerating factor for a single variable $Z_i$ is $AF = e^{\gamma_i Z_i}$
-
-
-This representation as a proportional odds model facilitates the interpretation of the model's results.
+This allows for the interpretation of $\exp(\frac{\gamma_i Z_i}{\sigma})$ as the Odds Ratio between the $i^{th}$ covariate and the baseline, in this case, a man who received a burn of type Chemical. Additionally, the general expression of the Accelerating Factor for a single variable $Z_i$ is $AF = e^{\gamma_i Z_i}$
 
 ```{r include=T}
 df = data.frame(gamma = coef(loglog_fit), OR = exp(coef(loglog_fit)/loglog_fit$scale), AFT = exp(-coef(loglog_fit)))[-1,]
 df
 ```
 
-The Log-logistic model allows us to analyze the Odds Ratio and Acceleration Factor of the various covariates in relation to the baseline. The Odds Ratio represents the ratio of the odds of an event occurring in one group to the odds of the event occurring in another group. 
+The Odds Ratio represents the ratio of the odds of an event occurring in one group to the odds of the event occurring in another group. 
 
 In our case, we can observe that, for each time t, the odds of surviving under the alternative treatment (body cleansing) are 2.37 times larger than the odds of surviving under the standard treatment (bathing care), confirming our earlier observations about the effectiveness of such treatments. 
 
@@ -514,7 +509,7 @@ Additionally, the low Odds Ratio in the buttock variable (OR=0.44) identifies it
 
 Finally, by analyzing the Odds Ratios of the burn type variable, we can confirm that Electrical burns are the most severe among the other types, with odds that are significantly lower in comparison to chemical burns (5%), scalding burns (24%), and flame burns (17%). The least dangerous burn type is Chemical, and Scalding and Flame burns can be considered to be of similar risk.
 
-Similar conclusions can be drawn by analyzing the Acceleration Factor, which indicates how a specific covariate affects an individual's lifespan. In particular, if the Acceleration Factor is less than 1, it means that the covariate is extending the survival time. In this case, we can deduce that being a woman and using the alternative treatment will almost double the lifespan, while sustaining a burn on the buttock or undergoing a scalding, electrical, or flame burn will reduce the lifespan by a factor of 2, 4, 15, and 3 respectively.
+Analogous conclusions can be drawn by analyzing the Accelerating Factor, which indicates how a specific covariate affects an individual's lifespan. In particular, if the Accelerating Factor is less than 1, it means that the covariate is extending the survival time. In this case, we can deduce that being a woman and using the alternative treatment will almost double the lifespan, while sustaining a burn on the buttock or undergoing a scalding, electrical, or flame burn will reduce the lifespan by a factor of 2, 4, 15, and 3 respectively.
 
 
 
@@ -643,11 +638,25 @@ We cannot reject the null hypothesis of the proportional hazards assumption so w
 
 # Conclusions
 
-In this report, we analyzed the survival times of burn patients using non-parametric and semi-parametric models. Our results indicate that the "body cleansing" treatment and being female are associated with longer survival times, while burns on the buttock and electrical burns are associated with shorter survival times. Our models also pass the assumption of proportional hazards, and we conclude that the Log-logistic model is the optimal one to describe the phenomenon.
+In this report, we analyzed the survival times of burn patients using non-parametric and semi-parametric models.
 
-In this study, we analyzed data from burn patients who were treated with either standard bathing care or body cleansing treatment. We used non-parametric and semi-parametric methods to analyze the survival times and hazard ratios, respectively. Our results indicate that the body cleansing treatment is more effective in increasing survival times, with a hazard ratio of 0.48 compared to the standard treatment. We also found that women have a lower hazard ratio than men, and that burns on the buttock are a significant risk factor. Additionally, we found that electrical burns have a much higher hazard ratio compared to other types of burns, making them the most dangerous. We also found that a Log-logistic model is the best model to describe our phenomenon, and that the residuals of the model are close to the theoretical ones. We also found that the assumption of proportional hazards is reasonable for this study.
+Our results indicate that the body cleansing treatment is more effective in increasing survival times, with a hazard ratio of 0.48 and an odds ratio of 2.37 compared to the standard treatment. This confirm, together with further analyses, might lead to an investigation and later to a wider use of this procedure and of other procedures which go in the same direction.
+
+We also highlighted the importance of electricity among the causes of accidental burns.
+
+Lastly, we found that burns on the buttock are a significant risk factor, which is coherent with literature. Indeed perineal and buttock burns are challenging wounds to heal for several reasons, because of the contamination risk and the shear stress that is always present. The ideal treatment approach for this area is still not well defined, therefore, given the fact that this covariate proved to be a relevant factor, with an hazard ratio of 1.85 and an odds ratio of 0.44, further research could be carried out in that direction.
 
 
 # References
 
+[1] Norbury W, Herndon DN, Tanksley J, et al.., Infection in Burns, *Surg Infect (Larchmt)* 2016; 17(2):250-255
+\
+\textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4790211/}
 
+[2] Latifi NA and Karimi H, Correlation of occurrence of infection in burn patients, *Ann Burns Fire Disasters* 2017;30(3):172-176
+\
+\textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5946749/}
+
+[3] Merchant N, Boudana D, Willoughby L et al.., Management of adult patients with buttock and perineal burns: The Ross Tilley Burn Centre experience, *J Trauma Acute Care Surg* 2014;77(4):640-648
+\
+\textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7876611/}
