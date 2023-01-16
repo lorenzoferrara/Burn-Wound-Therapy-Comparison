@@ -43,7 +43,7 @@ header-includes:
 knitr::opts_chunk$set(
 	fig.align = "center",
 	warning = FALSE,
-	cache = TRUE,
+	cache = FALSE,
 	echo = FALSE,
 	out.width = "70%",
 	tidy = TRUE,
@@ -218,6 +218,8 @@ grid.arrange(plot1, plot3, plot4, plot5, ncol=2)
 
 # Nonparametric analysis
 
+## Estimation of the survival function and the median survival time
+
 The overall survival function is
 
 ```{r include = TRUE}
@@ -236,6 +238,8 @@ med_surv_time = svf$time[temp]
 ```
 
 and the median survival time is `r med_surv_time` days.
+
+## Comparison of survival functions by means of nonparametric tests
 
 An examination of the survival function for different levels of the categorical covariates reveals notable variations in the patterns.
 
@@ -407,9 +411,7 @@ survdiff(formula)
 
 # Fit of a parametric survival model
 
-## Fit of a Weibull, log-logistic, or lognormal model.
-
-<!-- After observing that all the variables corresponding to the locations of the burn (except for the buttock indicator variable) were not significant -->
+## Fit of a Weibull and a Log-logistic model
 
 We'll fit the Weibull model:
 $$Y = \ln T = \mu + \gamma_1\cdot treatment + \gamma_2\cdot gender + \gamma_3\cdot head + \gamma_4\cdot buttock + \gamma_5\cdot torso + \gamma_6\cdot upper \textunderscore leg$$ 
@@ -485,6 +487,8 @@ kable(df, align = "c") %>%
 As a result, we have chosen the Log-logistic model as the optimal one to describe our phenomenon and will proceed to interpret it.
 
 ## Interpretation of the model fit.
+
+## Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor
 
 It is well known that a Log-logistic model can be represented as a proportional odds model, with respect to a baseline $Z=0$, as follows:
 $$\frac{S(t|Z)}{1-S(t|Z)} = \exp(\frac{\gamma'Z}{\sigma}) \cdot \frac{S(t|Z=0)}{1-S(t|Z=0)}$$
