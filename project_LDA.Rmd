@@ -505,7 +505,7 @@ While the general expression of the accelerating factor for a single variable $Z
 
 allows a representation as a proportional odds (PO) model.
 
-```{r}
+```{r include=T}
 df = data.frame(gamma = coef(loglog_fit), OR = exp(coef(loglog_fit)/loglog_fit$scale), AFT = exp(-coef(loglog_fit)))[-1,]
 df
 ```
