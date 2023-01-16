@@ -63,6 +63,7 @@ library(patchwork)
 library(gridExtra)
 library(rms)
 library(kableExtra)
+library(RColorBrewer)
 ```
 
 ```{r}
@@ -103,19 +104,19 @@ This report aims to compare the effectiveness of bathing care and body cleansing
 
 The present study utilizes a dataset of 154 patients from a study on the effectiveness of two different burn treatments on different parts of the body. Data was collected on treatment type, gender, burn percentage, burn location (head, buttock, torso, upper leg, lower leg, respiratory system), burn type, time on study, and occurrence of Staphylococcus infection.
 
-The sample is evenly divided between the two treatments, with 70 patients receiving bathing care and 84 receiving body cleansing. 
+* The sample is evenly divided between the two treatments, with 70 patients receiving bathing care and 84 receiving body cleansing. 
 \
-The majority of the sample is male, with 120 males and 34 females.
+* The majority of the sample is male, with 120 males and 34 females.
 \
-The burn percentage ranges from 2% to 95% with a mean of 24.96 and a median of 20. The distribution is slightly skewed to the right.
+* The burn percentage ranges from 2% to 95% with a mean of 24.96 and a median of 20. The distribution is slightly skewed to the right.
 \
-The burn location is recorded as binary variables, with 70 patients (45%) having a burn on the head, 35 (23%) on the buttock, 130 (84%) on the torso, 63 (41%) on the upper leg, 47 (31%) on the lower leg, and 45 (29%) in the respiratory system.
+* The burn location is recorded as binary variables, with 70 patients (45%) having a burn on the head, 35 (23%) on the buttock, 130 (84%) on the torso, 63 (41%) on the upper leg, 47 (31%) on the lower leg, and 45 (29%) in the respiratory system.
 \
-The burn type has 4 levels: "chemical", "scalding", "electrical" and "flame", with the majority of cases being flame burns (116 cases), followed by scalding (18 cases), electrical (11 cases), and chemical (9 cases).
+* The burn type has 4 levels: "chemical", "scalding", "electrical" and "flame", with the majority of cases being flame burns (116 cases), followed by scalding (18 cases), electrical (11 cases), and chemical (9 cases).
 \
-The survival time in the study ranges from 1 day to 97 days, with a mean of 21.80 and a median of 17.00. The data is skewed to the left.
+* The survival time in the study ranges from 1 day to 97 days, with a mean of 21.80 and a median of 17.00. The data is skewed to the left.
 \
-The occurrence of Staphylococcus infection is reported in 106 patients (69%). As there are a significant number of censored observations, this may lead to a lower accuracy and effectiveness of the results of our analyses.
+* The occurrence of Staphylococcus infection is reported in 106 patients (69%). As there are a significant number of censored observations, this may lead to a lower accuracy and effectiveness of the results of our analyses.
 
 
 
@@ -157,8 +158,9 @@ df1 <- burn %>%
   summarise(counts = n())
 
 plot1 = ggplot(df1, aes(x = burn.type, y = counts)) +
-  geom_bar(fill = c("green3", "royalblue3", "yellow2", "red3"), stat = "identity") # +
-  # geom_text(aes(label = counts), vjust = -0.3) 
+  geom_bar(fill = "royalblue3", stat = "identity") +
+  scale_fill_brewer(palette = "Dark2") # +
+  # geom_text(aes(label = counts), vjust = -0.3) c("green3", "royalblue3", "yellow2", "red3")
 
 
 #GENDER
@@ -167,7 +169,7 @@ df2 <- burn %>%
   summarise(counts = n())
 
 plot2 = ggplot(df2, aes(x = gender, y = counts)) +
-  geom_bar(fill = c("royalblue3", "salmon2"), stat = "identity") # + 
+  geom_bar(fill = c("yellow2", "salmon2"), stat = "identity") # + 
   # geom_text(aes(label = counts), vjust = -0.3)
 
 
@@ -177,7 +179,7 @@ df3 <- burn %>%
   summarise(counts = n())
 
 plot3 = ggplot(df3, aes(x = treatment, y = counts)) +
-  geom_bar(fill = c("royalblue3", "orange2"), stat = "identity") # + 
+  geom_bar(fill = c("yellow2", "orange2"), stat = "identity") # + 
   # geom_text(aes(label = counts), vjust = -0.3)
 
 
@@ -187,12 +189,13 @@ plot4 = ggplot(burn, aes(x=burn.percentage)) +
   geom_histogram(color="black", fill= heat.colors(round(100/binwidth), rev = T), binwidth = binwidth)
 
 
-
 #BODY AREA
-df5 = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) )
+df5 = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) ) 
 
 plot5 = ggplot(df5, aes(x = area, y = counts)) +
-  geom_bar(fill = "royalblue3", stat = "identity")# +   #0073C2FF
+  geom_bar(fill = "royalblue3", stat = "identity") #0073C2FF
+
+
   #geom_text(aes(label = counts), vjust = -0.3) 
 
 grid.arrange(plot1, plot3, plot4, plot5, ncol=2)
@@ -478,13 +481,13 @@ As a result, we have chosen the Log-logistic model as the optimal one to describ
 
 ## Interpretation of the model fit.
 
-Even though this model has been reached after a feature selection phase, not all the variables are significant, in terms of p-value:
+Even though this model was reached after a feature selection phase, not all variables were found to be significant in terms of p-value. 
 
-- the buttock variable and the treatment variable have respectively $p-value=0.047$ and $p-value=0.02$
-- the burn.type variable has its electrical level very significant, with a p-value of 0.018
-- the gender, with a p-value of 0.087, is the only one which cannot be considered significant at level 5% 
+- The buttock variable and the treatment variable had respective p-values of 0.047 and 0.02
+- The burn type variable had its electrical level with a significant p-value of 0.018. 
+- The gender variable, with a p-value of 0.087, was the only one that could not be considered significant at level 5%.
 
-Nonetheless the model fit is on the whole good, with a global p-value of 0.0033 and the best performance with regard to the Likelihood and the complexity.
+Despite this, the overall model fit was good, as evidenced by the global p-value of 0.0033 and the best performance in terms of Likelihood and complexity.
 
 ## Interpretation of the model parameters in terms of relative hazards or relative odds, and the accelerating factor
 
@@ -500,11 +503,9 @@ df
 ```
 
 The Odds Ratio represents the ratio of the odds of an event occurring in one group to the odds of the event occurring in another group. 
-
 In our case, we can observe that, for each time t, the odds of surviving under the alternative treatment (body cleansing) are 2.37 times larger than the odds of surviving under the standard treatment (bathing care), confirming our earlier observations about the effectiveness of such treatments. 
 
 Similarly, we can infer that, according to the model, the odds of survival for a woman are more than double those for a man (precisely 2.25). 
-
 Additionally, the low Odds Ratio in the buttock variable (OR=0.44) identifies it as a risk factor, as a person who sustains a burn on their buttock may have their survival odds reduced by almost half.
 
 Finally, by analyzing the Odds Ratios of the burn type variable, we can confirm that Electrical burns are the most severe among the other types, with odds that are significantly lower in comparison to chemical burns (5%), scalding burns (24%), and flame burns (17%). The least dangerous burn type is Chemical, and Scalding and Flame burns can be considered to be of similar risk.
@@ -527,7 +528,7 @@ The expression of the model is the following:
 $$\lambda(t|Z) =  \lambda_0(t) \cdot\exp(\gamma_1 \cdot treatment + \gamma_2 \cdot gender +\gamma_3\cdot buttock + \gamma_4 \cdot burn\_type)$$
 where  $burn\_type$ has the four levels: chemical, scalding, electrical, flame.
 
-![Table 5](images/Table5.png){width=70%}
+![](images/Table5.png){width=70%}
 
 
 ```{r}
@@ -566,7 +567,7 @@ We recall that the Hazard Ratio relative to a variable is compute as:
 
 $$\text{HR}_{i} = \frac{\lambda(t|Z_i=1)}{\lambda(t|Z_i=0)} = \exp (\beta_i Z_i)$$
 
-This value can be find in [Table 5]() under the column of "exp(coef)".
+This value can be find in the table above under the column of "exp(coef)".
 
 * The hazard ratio for treatment is 0.4842, indicating that the hazard of infection for patients receiving "body cleansing" treatment is 0.4842 times lower than for those receiving "bathing care" treatment.
 
@@ -642,7 +643,7 @@ In this report, we analyzed the survival times of burn patients using non-parame
 
 Our results indicate that the body cleansing treatment is more effective in increasing survival times, with a hazard ratio of 0.48 and an odds ratio of 2.37 compared to the standard treatment. This confirm, together with further analyses, might lead to an investigation and later to a wider use of this procedure and of other procedures which go in the same direction.
 
-We also highlighted the importance of electricity among the causes of accidental burns.
+We also highlighted the danger of electricity among the causes of accidental burns since it appeared to be the most subjected to infections.
 
 Lastly, we found that burns on the buttock are a significant risk factor, which is coherent with literature. Indeed perineal and buttock burns are challenging wounds to heal for several reasons, because of the contamination risk and the shear stress that is always present. The ideal treatment approach for this area is still not well defined, therefore, given the fact that this covariate proved to be a relevant factor, with an hazard ratio of 1.85 and an odds ratio of 0.44, further research could be carried out in that direction.
 
