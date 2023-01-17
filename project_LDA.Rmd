@@ -179,7 +179,7 @@ df3 <- burn %>%
   summarise(counts = n())
 
 plot3 = ggplot(df3, aes(x = treatment, y = counts)) +
-  geom_bar(fill = c("yellow2", "orange2"), stat = "identity") # + 
+  geom_bar(fill = c("royalblue3", "orange2"), stat = "identity") # + 
   # geom_text(aes(label = counts), vjust = -0.3)
 
 
@@ -193,8 +193,8 @@ plot4 = ggplot(burn, aes(x=burn.percentage)) +
 df5 = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) ) 
 
 plot5 = ggplot(df5, aes(x = area, y = counts)) +
-  geom_bar(fill = "royalblue3", stat = "identity") #0073C2FF
-
+  geom_bar(fill = "royalblue3", stat = "identity") + #0073C2FF
+  theme(axis.text  = element_text(size=5))
 
   #geom_text(aes(label = counts), vjust = -0.3) 
 
@@ -495,7 +495,7 @@ It is well known that a Log-logistic model can be represented as a proportional 
 $$\frac{S(t|Z)}{1-S(t|Z)} = \exp(\frac{\gamma'Z}{\sigma}) \cdot \frac{S(t|Z=0)}{1-S(t|Z=0)}$$
 
 
-This allows for the interpretation of $\exp(\frac{\gamma_i Z_i}{\sigma})$ as the Odds Ratio between the $i^{th}$ covariate and the baseline, in this case, a man who received a burn of type Chemical. Additionally, the general expression of the Accelerating Factor for a single variable $Z_i$ is $AF = e^{\gamma_i Z_i}$
+This allows for the interpretation of $\exp(\frac{\gamma_i Z_i}{\sigma})$ as the Odds Ratio between the $i^{th}$ covariate and the baseline, in this case, a man who received a burn of type Chemical. Additionally, the general expression of the Accelerating Factor for a single variable $Z_i$ is $AF = e^{- \gamma_i Z_i}$
 
 ```{r include=T}
 df = data.frame(gamma = coef(loglog_fit), OR = exp(coef(loglog_fit)/loglog_fit$scale), AFT = exp(-coef(loglog_fit)))[-1,]
@@ -651,13 +651,10 @@ Lastly, we found that burns on the buttock are a significant risk factor, which 
 # References
 
 [1] Norbury W, Herndon DN, Tanksley J, et al.., Infection in Burns, *Surg Infect (Larchmt)* 2016; 17(2):250-255
-\
 \textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4790211/}
 
 [2] Latifi NA and Karimi H, Correlation of occurrence of infection in burn patients, *Ann Burns Fire Disasters* 2017;30(3):172-176
-\
 \textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5946749/}
 
 [3] Merchant N, Boudana D, Willoughby L et al.., Management of adult patients with buttock and perineal burns: The Ross Tilley Burn Centre experience, *J Trauma Acute Care Surg* 2014;77(4):640-648
-\
 \textcolor{blue}{https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7876611/}

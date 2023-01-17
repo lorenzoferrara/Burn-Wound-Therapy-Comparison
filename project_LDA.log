@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.12.27)  17 JAN 2023 00:25
+This is pdfTeX, Version 3.141592653-2.6-1.40.24 (TeX Live 2022) (preloaded format=pdflatex 2022.12.27)  17 JAN 2023 14:45
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**project_LDA_WIP.tex
-(./project_LDA_WIP.tex
+**project_LDA.tex
+(./project_LDA.tex
 LaTeX2e <2022-11-01> patch level 1
 L3 programming layer <2022-12-17> (/Users/marco/Library/TinyTeX/texmf-dist/tex/latex/base/article.cls
 Document Class: article 2022/07/02 v1.4n Standard LaTeX document class
@@ -475,8 +475,8 @@ Package: etoolbox 2020/10/05 v2.5k e-TeX tools for LaTeX (JAW)
 File: l3backend-pdftex.def 2022-10-26 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count317
 \l__pdf_internal_box=\box72
-) (./project_LDA_WIP.aux)
-\openout1 = `project_LDA_WIP.aux'.
+) (./project_LDA.aux)
+\openout1 = `project_LDA.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 96.
 LaTeX Font Info:    ... okay on input line 96.
@@ -548,9 +548,9 @@ Package caption Info: threeparttable package is loaded.
 Package caption Info: wrapfig package is loaded.
 Package caption Info: End \AtBeginDocument code.
 Package hyperref Info: Link coloring OFF on input line 96.
-(./project_LDA_WIP.out) (./project_LDA_WIP.out)
+(./project_LDA.out) (./project_LDA.out)
 \@outlinefile=\write3
-\openout3 = `project_LDA_WIP.out'.
+\openout3 = `project_LDA.out'.
 
 LaTeX Font Info:    Trying to load font information for OT1+lmr on input line 98.
 (/Users/marco/Library/TinyTeX/texmf-dist/tex/latex/lm/ot1lmr.fd
@@ -628,21 +628,21 @@ Underfull \hbox (badness 10000) in paragraph at lines 187--190
 
  []
 
-<project_LDA_WIP_files/figure-latex/unnamed-chunk-3-1.pdf, id=89, 469.755pt x 325.215pt>
-File: project_LDA_WIP_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (type pdf)
-<use project_LDA_WIP_files/figure-latex/unnamed-chunk-3-1.pdf>
-Package pdftex.def Info: project_LDA_WIP_files/figure-latex/unnamed-chunk-3-1.pdf  used on input line 198.
+<project_LDA_files/figure-latex/unnamed-chunk-3-1.pdf, id=89, 469.755pt x 325.215pt>
+File: project_LDA_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (type pdf)
+<use project_LDA_files/figure-latex/unnamed-chunk-3-1.pdf>
+Package pdftex.def Info: project_LDA_files/figure-latex/unnamed-chunk-3-1.pdf  used on input line 198.
 (pdftex.def)             Requested size: 328.82626pt x 227.64894pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.200 \newpage
-               [3 <./project_LDA_WIP_files/figure-latex/unnamed-chunk-3-1.pdf>]
-<project_LDA_WIP_files/figure-latex/unnamed-chunk-4-1.pdf, id=100, 469.755pt x 325.215pt>
-File: project_LDA_WIP_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type pdf)
-<use project_LDA_WIP_files/figure-latex/unnamed-chunk-4-1.pdf>
-Package pdftex.def Info: project_LDA_WIP_files/figure-latex/unnamed-chunk-4-1.pdf  used on input line 211.
+               [3 <./project_LDA_files/figure-latex/unnamed-chunk-3-1.pdf>]
+<project_LDA_files/figure-latex/unnamed-chunk-4-1.pdf, id=100, 469.755pt x 325.215pt>
+File: project_LDA_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type pdf)
+<use project_LDA_files/figure-latex/unnamed-chunk-4-1.pdf>
+Package pdftex.def Info: project_LDA_files/figure-latex/unnamed-chunk-4-1.pdf  used on input line 211.
 (pdftex.def)             Requested size: 328.82626pt x 227.64894pt.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <10> on input line 235.
@@ -655,18 +655,18 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.}) has be
 <to be read again> 
                    \relax 
 l.251 ...{men}(t) \neq S_{women}(t) \end{cases} \]
-                                                   [4 <./project_LDA_WIP_files/figure-latex/unnamed-chunk-4-1.pdf>]
-<project_LDA_WIP_files/figure-latex/unnamed-chunk-11-1.pdf, id=117, 469.755pt x 325.215pt>
-File: project_LDA_WIP_files/figure-latex/unnamed-chunk-11-1.pdf Graphic file (type pdf)
-<use project_LDA_WIP_files/figure-latex/unnamed-chunk-11-1.pdf>
-Package pdftex.def Info: project_LDA_WIP_files/figure-latex/unnamed-chunk-11-1.pdf  used on input line 280.
+                                                   [4 <./project_LDA_files/figure-latex/unnamed-chunk-4-1.pdf>]
+<project_LDA_files/figure-latex/unnamed-chunk-11-1.pdf, id=117, 469.755pt x 325.215pt>
+File: project_LDA_files/figure-latex/unnamed-chunk-11-1.pdf Graphic file (type pdf)
+<use project_LDA_files/figure-latex/unnamed-chunk-11-1.pdf>
+Package pdftex.def Info: project_LDA_files/figure-latex/unnamed-chunk-11-1.pdf  used on input line 280.
 (pdftex.def)             Requested size: 328.82626pt x 227.64894pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.301   L
-         astly, the survival function for flame burns shows a smoother trend, [5 <./project_LDA_WIP_files/figure-latex/unnamed-chunk-11-1.pdf>]
+         astly, the survival function for flame burns shows a smoother trend, [5 <./project_LDA_files/figure-latex/unnamed-chunk-11-1.pdf>]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
@@ -690,17 +690,17 @@ LaTeX Warning: Command \textunderscore invalid in math mode on input line 323.
 
 LaTeX Warning: Command \textunderscore invalid in math mode on input line 333.
 
-<project_LDA_WIP_files/figure-latex/unnamed-chunk-16-1.pdf, id=135, 469.755pt x 325.215pt>
-File: project_LDA_WIP_files/figure-latex/unnamed-chunk-16-1.pdf Graphic file (type pdf)
-<use project_LDA_WIP_files/figure-latex/unnamed-chunk-16-1.pdf>
-Package pdftex.def Info: project_LDA_WIP_files/figure-latex/unnamed-chunk-16-1.pdf  used on input line 347.
+<project_LDA_files/figure-latex/unnamed-chunk-16-1.pdf, id=135, 469.755pt x 325.215pt>
+File: project_LDA_files/figure-latex/unnamed-chunk-16-1.pdf Graphic file (type pdf)
+<use project_LDA_files/figure-latex/unnamed-chunk-16-1.pdf>
+Package pdftex.def Info: project_LDA_files/figure-latex/unnamed-chunk-16-1.pdf  used on input line 347.
 (pdftex.def)             Requested size: 328.82626pt x 227.64894pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.377 ...\label{interpretation-of-the-model-fit.}}
-                                                   [7 <./project_LDA_WIP_files/figure-latex/unnamed-chunk-16-1.pdf>]
+                                                   [7 <./project_LDA_files/figure-latex/unnamed-chunk-16-1.pdf>]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
@@ -717,10 +717,10 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.}) has be
                    \relax 
 l.495   B
          urn type has 4 levels, with the base case being chemical. The [9 <./images/Table5.png>]
-<project_LDA_WIP_files/figure-latex/unnamed-chunk-26-1.pdf, id=166, 469.755pt x 325.215pt>
-File: project_LDA_WIP_files/figure-latex/unnamed-chunk-26-1.pdf Graphic file (type pdf)
-<use project_LDA_WIP_files/figure-latex/unnamed-chunk-26-1.pdf>
-Package pdftex.def Info: project_LDA_WIP_files/figure-latex/unnamed-chunk-26-1.pdf  used on input line 563.
+<project_LDA_files/figure-latex/unnamed-chunk-26-1.pdf, id=166, 469.755pt x 325.215pt>
+File: project_LDA_files/figure-latex/unnamed-chunk-26-1.pdf Graphic file (type pdf)
+<use project_LDA_files/figure-latex/unnamed-chunk-26-1.pdf>
+Package pdftex.def Info: project_LDA_files/figure-latex/unnamed-chunk-26-1.pdf  used on input line 563.
 (pdftex.def)             Requested size: 328.82626pt x 227.64894pt.
 
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
@@ -732,25 +732,25 @@ pdfTeX warning (ext4): destination with the same identifier (name{page.}) has be
 <to be read again> 
                    \relax 
 l.582 \newpage
-               [11 <./project_LDA_WIP_files/figure-latex/unnamed-chunk-26-1.pdf>]
+               [11 <./project_LDA_files/figure-latex/unnamed-chunk-26-1.pdf>]
 pdfTeX warning (ext4): destination with the same identifier (name{page.}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
 l.626 \end{document}
-                     [12] (./project_LDA_WIP.aux)
-Package rerunfilecheck Info: File `project_LDA_WIP.out' has not changed.
+                     [12] (./project_LDA.aux)
+Package rerunfilecheck Info: File `project_LDA.out' has not changed.
 (rerunfilecheck)             Checksum: 63F30866C13C46B9D0CB0495011C3C76;4536.
  ) 
 Here is how much of TeX's memory you used:
  14153 strings out of 478053
- 231353 string characters out of 5840127
+ 231121 string characters out of 5840127
  1860793 words of memory out of 5000000
  33981 multiletter control sequences out of 15000+600000
  568279 words of font info for 75 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 72i,10n,79p,726b,503s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 72i,10n,79p,722b,503s stack positions out of 10000i,1000n,20000p,200000b,200000s
 {/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ec.enc}{/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathit.enc}{/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathsy.enc}{/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-rm.enc}{/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-mathex.enc}{/Users/marco/Library/TinyTeX/texmf-dist/fonts/enc/dvips/lm/lm-ts1.enc}</Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmbx12.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmex10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi5.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmmi7.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr12.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr17.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmr7.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmri10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy10.pfb></Users/marco/Library/TinyTeX/texmf-dist/fonts/type1/public/lm/lmsy7.pfb>
-Output written on project_LDA_WIP.pdf (12 pages, 601201 bytes).
+Output written on project_LDA.pdf (12 pages, 601715 bytes).
 PDF statistics:
  264 PDF objects out of 1000 (max. 8388607)
  205 compressed objects within 3 object streams
