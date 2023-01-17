@@ -190,11 +190,12 @@ plot4 = ggplot(burn, aes(x=burn.percentage)) +
 
 
 #BODY AREA
-df5 = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory.system"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) ) 
+df5 = data.frame( area = c("head", "buttock", "torso", "upper.leg", "lower.leg", "Respiratory"), counts = c(sum(burn$head==1), sum(burn$buttock==1), sum(burn$torso==1), sum(burn$upper.leg==1), sum(burn$lower.leg==1), sum(burn$respiratory.system==1)) ) 
+
 
 plot5 = ggplot(df5, aes(x = area, y = counts)) +
   geom_bar(fill = "royalblue3", stat = "identity") + #0073C2FF
-  theme(axis.text  = element_text(size=5))
+  theme(axis.text  = element_text(size=7))
 
   #geom_text(aes(label = counts), vjust = -0.3) 
 
