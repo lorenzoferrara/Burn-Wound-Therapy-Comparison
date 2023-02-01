@@ -1,6 +1,3 @@
-# Lifetime-Data-Analysis-project
-Assignment for the  course at Universitat Politecnica de Catalunya 2022/23.
-
 <h1 align="center"> Dynamics in a time discrete prey predator model </h1>
 
 <h4 align="left">Project for the course of Lifetime Data Analysis at Universitat Politecnica de Catalunya, 2022/2023</h4>
