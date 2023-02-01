@@ -1,6 +1,6 @@
 <h1 align="left"> Burn Wound Therapy Comparison </h1>
 
-<h4 align="left">Project for the course of Lifetime Data Analysis at Universitat Politecnica de Catalunya, 2022/2023</h4>
+<h4 align="left">Project for the course of Lifetime Data Analysis at Universitat Politècnica de Catalunya, 2022/2023</h4>
 
 <p align="left"> Team members:
 <ul>
