@@ -67,7 +67,7 @@ library(RColorBrewer)
 ```
 
 ```{r}
-burn <- read.table("Burn.txt", skip = 32)
+burn <- read.table("data/Burn.txt", skip = 32)
   
 colnames(burn) = c("treatment", "gender", "burn.percentage", "head", "buttock", "torso", "upper.leg", "lower.leg", "respiratory.system", "burn.type", "time", "cens")
 
